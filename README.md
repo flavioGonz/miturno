@@ -76,7 +76,7 @@ Asegúrate de tener lo siguiente instalado en tu sistema:
 ```bash
 # 1. Clona el repositorio en el directorio de tu preferencia (ej: /home/pi)
 cd /home/pi
-git clone [https://github.com/tu-usuario/turnito.git](https://github.com/flavioGonz/miturno) # <-- Reemplaza con tu URL de repo
+git clone [https://github.com/flavioGonz/miturno.git
 cd turnito
 
 # 2. Instala las dependencias del proyecto
