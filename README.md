@@ -207,6 +207,11 @@ La aplicación puede ser controlada por pulsadores físicos conectados a los pin
 | `22`  | IN         | `prev_turn`    | Acción personalizada (actualmente solo log).        |
 | `23`  | OUT        | `led`          | Indicador LED que puede ser controlado desde la web. |
 
+<img width="1013" height="807" alt="image" src="https://github.com/user-attachments/assets/30672b95-6985-4dae-9e4b-11bdb6b2e54b" /> <img width="1016" height="808" alt="image" src="https://github.com/user-attachments/assets/02982077-bb79-48ca-8827-2a9a330d05a8" /><img width="1011" height="843" alt="image" src="https://github.com/user-attachments/assets/6c4ece14-8b19-4d11-8b0d-bde96e1cc639" />
+
+
+
+
 ### Impresora Térmica de Tickets
 
 El sistema soporta impresoras de tickets de 80mm. Ve a la sección `/sistema/impresion` para configurar.
