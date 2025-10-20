@@ -6,6 +6,9 @@
 
 Es la herramienta perfecta para pequeños negocios, clínicas, oficinas o cualquier entorno que requiera organizar la atención al público y, al mismo tiempo, tener control total sobre el dispositivo que lo gestiona, todo desde una interfaz web amigable y completamente offline.
 
+<img width="1898" height="934" alt="image" src="https://github.com/user-attachments/assets/33d7a5bd-57d5-4171-9f3e-ebce42b6f237" />
+
+
 ---
 
 ## ✨ Características Principales
