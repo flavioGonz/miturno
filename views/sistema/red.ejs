@@ -1,0 +1,139 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/red.ejs
+  Descripción: Control de red - Modo Cliente Wi-Fi o Hotspot local
+  Versión: 2.6 - Offline Edition
+-->
+
+<div class="container-fluid">
+  <h2 class="text-info mb-4">
+    <i class="ti ti-wifi"></i> Configuración de Red
+  </h2>
+
+  <div id="networkStatus" class="mb-4 p-3 rounded bg-black text-light border border-secondary">
+    <strong>Modo actual:</strong> <span id="modeLabel">Cargando...</span>
+    <br>
+    <strong>Estado nmcli:</strong>
+    <pre id="nmcliStatus" class="mt-2 text-success small">Cargando...</pre>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card bg-black border-0 shadow-sm p-3 h-100">
+        <h4 class="text-info"><i class="ti ti-router"></i> Modo Cliente Wi-Fi</h4>
+        <p class="text-muted small">Conectarse a una red existente.</p>
+        <div class="mb-2">
+          <label class="form-label text-light">SSID</label>
+          <input id="wifiSSID" type="text" class="form-control bg-dark text-light border-0" placeholder="Nombre de la red Wi-Fi">
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-light">Contraseña</label>
+          <input id="wifiPass" type="password" class="form-control bg-dark text-light border-0" placeholder="Contraseña de la red">
+        </div>
+        <button class="btn btn-outline-info w-100" id="connectBtn">
+          <i class="ti ti-wifi"></i> Conectar como Cliente
+        </button>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card bg-black border-0 shadow-sm p-3 h-100">
+        <h4 class="text-warning"><i class="ti ti-access-point"></i> Modo Hotspot</h4>
+        <p class="text-muted small">Crear una red Wi-Fi local (punto de acceso).</p>
+        <div class="mb-2">
+          <label class="form-label text-light">SSID</label>
+          <input id="apSSID" type="text" class="form-control bg-dark text-light border-0" value="TurnitoAP">
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-light">Contraseña</label>
+          <input id="apPass" type="password" class="form-control bg-dark text-light border-0" value="turnito1234">
+        </div>
+        <button class="btn btn-outline-warning w-100" id="hotspotBtn">
+          <i class="ti ti-wifi-2"></i> Activar Hotspot
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 text-center">
+    <button class="btn btn-outline-secondary" id="refreshNet">
+      <i class="ti ti-refresh"></i> Actualizar Estado
+    </button>
+  </div>
+</div>
+
+<style>
+  pre {
+    background: transparent;
+    color: #8ef59c;
+    border: none;
+  }
+  .card {
+    border-radius: 8px;
+    transition: 0.2s;
+  }
+  .card:hover {
+    background-color: #11161d;
+  }
+</style>
+
+<script>
+(async () => {
+  const modeLabel = document.getElementById('modeLabel');
+  const nmcliStatus = document.getElementById('nmcliStatus');
+  const connectBtn = document.getElementById('connectBtn');
+  const hotspotBtn = document.getElementById('hotspotBtn');
+  const refreshBtn = document.getElementById('refreshNet');
+
+  async function getStatus() {
+    modeLabel.textContent = 'Cargando...';
+    nmcliStatus.textContent = 'Cargando...';
+    try {
+      const res = await fetch('/api/network/status', { credentials: 'include' });
+      const data = await res.json();
+      modeLabel.textContent = data.mode || 'Desconocido';
+      nmcliStatus.textContent = data.nmcli || '(sin datos)';
+    } catch (err) {
+      modeLabel.textContent = 'Error';
+      nmcliStatus.textContent = err.message;
+    }
+  }
+
+  async function connectWiFi() {
+    const ssid = document.getElementById('wifiSSID').value.trim();
+    const pass = document.getElementById('wifiPass').value.trim();
+    if (!ssid || !pass) return alert('Debes ingresar SSID y contraseña');
+    if (!confirm(`¿Conectarse a la red "${ssid}"?`)) return;
+    const res = await fetch('/api/network/mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'client', ssid, password: pass }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    alert(data.message || 'Conexión ejecutada');
+    getStatus();
+  }
+
+  async function startHotspot() {
+    const ssid = document.getElementById('apSSID').value.trim();
+    const pass = document.getElementById('apPass').value.trim();
+    if (!ssid || !pass) return alert('Debes ingresar SSID y contraseña');
+    if (!confirm(`¿Activar Hotspot "${ssid}"?`)) return;
+    const res = await fetch('/api/network/mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'hotspot', ssid, password: pass }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    alert(data.message || 'Hotspot iniciado');
+    getStatus();
+  }
+
+  connectBtn.onclick = connectWiFi;
+  hotspotBtn.onclick = startHotspot;
+  refreshBtn.onclick = getStatus;
+
+  getStatus();
+})();
+</script>

@@ -1,0 +1,31 @@
+{
+  "name": "turnito",
+  "version": "1.0.0",
+  "description": "Turnito Admin - Sistema de gestión de turnos y control para Raspberry Pi",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "pm2": "pm2 start index.js --name turnito"
+  },
+  "author": "Infratec Networks - Flavio González",
+  "license": "MIT",
+  "dependencies": {
+    "@tabler/core": "^1.4.0",
+    "@tabler/icons": "^3.5.0",
+    "bcrypt": "^6.0.0",
+    "connect-sqlite3": "^0.9.16",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-fileupload": "^1.4.3",
+    "express-session": "^1.18.2",
+    "fs-extra": "^11.2.0",
+    "node-fetch": "^3.3.2",
+    "pigpio-client": "^1.2.2",
+    "pm2": "^5.4.2",
+    "socket.io": "^4.7.5",
+    "sqlite3": "^5.1.7",
+    "child_process": "^1.0.2"
+  }
+}

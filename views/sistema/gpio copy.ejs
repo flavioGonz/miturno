@@ -1,0 +1,91 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/gpio.ejs
+  Descripción: Visualización y control en tiempo real de pines GPIO del Raspberry Pi
+  Versión: 2.0 - Turnito Admin Hardware Panel (Socket.IO Live)
+-->
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0"><i class="ti ti-circuit-board"></i> Pines GPIO</h2>
+    <button id="btnRefresh" class="btn btn-outline-info">
+      <i class="ti ti-refresh"></i> Actualizar Estado
+    </button>
+  </div>
+
+  <div id="alertBox" class="alert d-none mt-3"></div>
+
+  <div class="card bg-dark border-0 shadow-sm p-4">
+    <h4 class="text-light mb-3"><i class="ti ti-chip"></i> Estado de Pines</h4>
+    <div id="gpioBoard" class="d-flex flex-wrap justify-content-center gap-2"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const board = document.getElementById('gpioBoard');
+  const btnRefresh = document.getElementById('btnRefresh');
+
+  async function loadGPIO() {
+    const res = await fetch('/api/gpio/status', { credentials: 'include' });
+    const data = await res.json().catch(() => ({}));
+    board.innerHTML = '';
+    if (!data.pins) {
+      board.innerHTML = '<div class="text-muted">No se pudieron leer los pines.</div>';
+      return;
+    }
+
+    data.pins.forEach(pin => {
+      const el = document.createElement('button');
+      el.className = `gpio-pin btn btn-sm ${
+        pin.value === 1 ? 'btn-success' : 'btn-secondary'
+      }`;
+      el.style.width = '90px';
+      el.style.height = '90px';
+      el.style.borderRadius = '10px';
+      el.innerHTML = `
+        <div class="fw-bold">GPIO${pin.id}</div>
+        <div class="small">${pin.mode}</div>
+        <div class="small state">${pin.value ? 'HIGH' : 'LOW'}</div>
+      `;
+      board.appendChild(el);
+    });
+  }
+
+  btnRefresh.onclick = loadGPIO;
+  loadGPIO();
+
+  // 🎧 Socket.IO tiempo real
+  const socket = io();
+
+  socket.on('gpio-update', data => {
+    const el = [...document.querySelectorAll('.gpio-pin')].find(b =>
+      b.innerText.includes(`GPIO${data.pin}`)
+    );
+    if (el) {
+      const isHigh = data.value === 1;
+      el.classList.toggle('btn-success', isHigh);
+      el.classList.toggle('btn-secondary', !isHigh);
+      el.querySelector('.state').textContent = isHigh ? 'HIGH' : 'LOW';
+      el.animate([{ transform: 'scale(1.2)' }, { transform: 'scale(1)' }],
+                 { duration: 200, easing: 'ease-out' });
+    }
+  });
+});
+</script>
+
+
+<style>
+.gpio-pin {
+  min-width: 80px;
+  height: 80px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+.gpio-pin.btn-success {
+  box-shadow: 0 0 10px rgba(0,255,0,0.3);
+}
+.gpio-pin.btn-secondary {
+  opacity: 0.7;
+}
+</style>

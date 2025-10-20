@@ -1,0 +1,55 @@
+<div class="page-header d-print-none">
+    <h1 class="page-title"><%= title %></h1>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Turnos</h3>
+            </div>
+            <div class="list-group list-group-flush" id="turns-list"></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" id="add-turn-btn">Añadir Turno</button>
+            <button class="btn btn-success" id="call-next-btn">Llamar Siguiente</button>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const queueId = "<%= queue.id %>";
+        const turnsList = document.getElementById('turns-list');
+        const addTurnBtn = document.getElementById('add-turn-btn');
+        const callNextBtn = document.getElementById('call-next-btn');
+        const fetchTurns = () => {
+            fetch(`/api/queues/${queueId}/turns`).then(res => res.json()).then(turns => {
+                turnsList.innerHTML = '';
+                turns.forEach(t => {
+                    const el = document.createElement('div');
+                    el.className = 'list-group-item';
+                    el.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Turno #${t.turn_number}</h5>
+                                <small>${t.status}</small>
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="completeTurn(${t.id})">Completar</button>
+                            <button class="btn btn-sm btn-warning" onclick="skipTurn(${t.id})">Saltar</button>
+                        `;
+                    turnsList.appendChild(el);
+                });
+            });
+        };
+        addTurnBtn.addEventListener('click', () => {
+            fetch(`/api/queues/${queueId}/turns`, { method: 'POST' }).then(fetchTurns);
+        });
+        callNextBtn.addEventListener('click', () => {
+            fetch(`/api/queues/${queueId}/call-next`, { method: 'POST' }).then(fetchTurns);
+        });
+        window.completeTurn = (id) => fetch(`/api/turns/${id}/complete`, { method: 'PUT' }).then(fetchTurns);
+        window.skipTurn = (id) => fetch(`/api/turns/${id}/skip`, { method: 'PUT' }).then(fetchTurns);
+        fetchTurns();
+        setInterval(fetchTurns, 5000);
+    });
+</script>

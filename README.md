@@ -6,9 +6,6 @@
 
 Es la herramienta perfecta para pequeños negocios, clínicas, oficinas o cualquier entorno que requiera organizar la atención al público y, al mismo tiempo, tener control total sobre el dispositivo que lo gestiona, todo desde una interfaz web amigable y completamente offline.
 
-<img width="1898" height="934" alt="image" src="https://github.com/user-attachments/assets/33d7a5bd-57d5-4171-9f3e-ebce42b6f237" />
-
-
 ---
 
 ## ✨ Características Principales
@@ -76,7 +73,7 @@ Asegúrate de tener lo siguiente instalado en tu sistema:
 ```bash
 # 1. Clona el repositorio en el directorio de tu preferencia (ej: /home/pi)
 cd /home/pi
-git clone [https://github.com/flavioGonz/miturno.git
+git clone https://github.com/tu-usuario/turnito.git # <-- Reemplaza con tu URL de repo
 cd turnito
 
 # 2. Instala las dependencias del proyecto
@@ -209,11 +206,6 @@ La aplicación puede ser controlada por pulsadores físicos conectados a los pin
 | `27`  | IN         | `next_turn`    | Llama al siguiente turno de la cola 1.               |
 | `22`  | IN         | `prev_turn`    | Acción personalizada (actualmente solo log).        |
 | `23`  | OUT        | `led`          | Indicador LED que puede ser controlado desde la web. |
-
-<img width="1013" height="807" alt="image" src="https://github.com/user-attachments/assets/30672b95-6985-4dae-9e4b-11bdb6b2e54b" /> <img width="1016" height="808" alt="image" src="https://github.com/user-attachments/assets/02982077-bb79-48ca-8827-2a9a330d05a8" /><img width="1011" height="843" alt="image" src="https://github.com/user-attachments/assets/6c4ece14-8b19-4d11-8b0d-bde96e1cc639" />
-
-
-
 
 ### Impresora Térmica de Tickets
 
@@ -368,3 +360,262 @@ Este proyecto está bajo la Licencia MIT.
 
 Desarrollado por **Flavio González – Infratec Networks**
 Uruguay – 2025
+
+
+
+
+
+<pre class="overflow-visible!" data-start="485" data-end="841"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-markdown"><span><span>---
+
+</span><span>## 🧩 Diagnóstico, Mantenimiento y Solución de Problemas</span><span>
+
+Esta sección está pensada para </span><span>**técnicos en campo o integradores**</span><span> que necesiten resolver fallos sin depender del entorno de desarrollo o conexión a Internet.
+
+---
+
+</span><span>### 🧠 1. Diagnóstico Rápido del Sistema</span><span>
+
+Verifica que el servicio esté activo con </span><span>**PM2**</span><span>:
+
+```bash
+pm2 status
+</span></span></code></div></div></pre>
+
+**Salida esperada:**
+
+<pre class="overflow-visible!" data-start="864" data-end="1081"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>┌────┬──────────┬────────┬─────┬────────┐
+│ </span><span>id</span><span> │ name     │ status │ cpu │ mem    │
+├────┼──────────┼────────┼─────┼────────┤
+│ 0  │ turnito  │ online │ 1%  │ 90 MB  │
+└────┴──────────┴────────┴─────┴────────┘
+</span></span></code></div></div></pre>
+
+Si aparece `errored` o `stopped`:
+
+<pre class="overflow-visible!" data-start="1118" data-end="1166"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>pm2 restart turnito
+pm2 logs turnito
+</span></span></code></div></div></pre>
+
+---
+
+### ⚙️ 2. Verificar el Daemon de GPIO (`pigpiod`)
+
+El servicio **pigpiod** debe estar activo para el control de botones y LEDs.
+
+<pre class="overflow-visible!" data-start="1302" data-end="1343"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo systemctl status pigpiod
+</span></span></code></div></div></pre>
+
+Si no está activo:
+
+<pre class="overflow-visible!" data-start="1365" data-end="1437"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo systemctl restart pigpiod
+sudo systemctl </span><span>enable</span><span> pigpiod
+</span></span></code></div></div></pre>
+
+Verifica que escuche en el puerto 8888:
+
+<pre class="overflow-visible!" data-start="1480" data-end="1521"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo netstat -anp | grep 8888
+</span></span></code></div></div></pre>
+
+**Salida esperada:**
+
+<pre class="overflow-visible!" data-start="1544" data-end="1604"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>tcp</span><span></span><span>0</span><span></span><span>0</span><span></span><span>127.0.0.1:8888</span><span></span><span>0.0.0.0</span><span>:*  LISTEN  pigpiod
+</span></span></code></div></div></pre>
+
+---
+
+### 🖨️ 3. Diagnóstico de Impresora POS
+
+#### 🔌 Verificar conexión USB:
+
+<pre class="overflow-visible!" data-start="1684" data-end="1701"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>lsusb
+</span></span></code></div></div></pre>
+
+**Ejemplo de salida:**
+
+<pre class="overflow-visible!" data-start="1725" data-end="1803"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre!"><span><span>Bus 001 Device 004:</span><span></span><span>ID</span><span></span><span>0416</span><span>:5011</span><span></span><span>Winbond</span><span></span><span>Electronics</span><span></span><span>Corp.</span><span></span><span>POS</span><span></span><span>Printer</span><span>
+</span></span></code></div></div></pre>
+
+#### 🧩 Consultar estado desde la API:
+
+<pre class="overflow-visible!" data-start="1844" data-end="1909"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>curl -b cookies.txt http://<IP>:3000/api/print/status
+</span></span></code></div></div></pre>
+
+**Respuesta esperada (modo USB):**
+
+<pre class="overflow-visible!" data-start="1946" data-end="2021"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-json"><span><span>{</span><span></span><span>"connected"</span><span>:</span><span></span><span>true</span><span></span><span>,</span><span></span><span>"message"</span><span>:</span><span></span><span>"Impresora POS USB detectada"</span><span></span><span>}</span><span>
+</span></span></code></div></div></pre>
+
+Si aparece desconectada:
+
+* Revisa el cable o cambia de puerto.
+* Reinicia el servicio: `pm2 restart turnito`.
+* Desconecta y reconecta la impresora (espera 5 segundos).
+
+#### 🌐 Diagnóstico Red (modo TCP/IP):
+
+<pre class="overflow-visible!" data-start="2232" data-end="2322"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>ping 192.168.1.100
+curl -X POST -b cookies.txt http://<IP>:3000/api/print/test
+</span></span></code></div></div></pre>
+
+---
+
+### 🧾 4. Diagnóstico de Base de Datos SQLite
+
+Si ves errores tipo `SQLITE_BUSY` o `SQLITE_CANTOPEN`, ejecuta:
+
+<pre class="overflow-visible!" data-start="2441" data-end="2557"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo systemctl stop pigpiod
+pm2 stop turnito
+</span><span>rm</span><span> -f db/turnito.db-shm db/turnito.db-wal
+pm2 start turnito
+</span></span></code></div></div></pre>
+
+Verifica las tablas:
+
+<pre class="overflow-visible!" data-start="2581" data-end="2660"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sqlite3 db/turnito.db
+sqlite> .tables
+sqlite> SELECT * FROM queues;
+</span></span></code></div></div></pre>
+
+---
+
+### 🌐 5. Diagnóstico de Red y FullPageOS
+
+#### 📡 Estado actual:
+
+<pre class="overflow-visible!" data-start="2733" data-end="2764"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>nmcli device status
+</span></span></code></div></div></pre>
+
+#### 🔄 Conectar a Wi-Fi manualmente:
+
+<pre class="overflow-visible!" data-start="2804" data-end="2902"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo nmcli device wifi list
+sudo nmcli device wifi connect </span><span>"TuSSID"</span><span> password </span><span>"TuClave"</span><span>
+</span></span></code></div></div></pre>
+
+#### 🔧 Revisar modo desde la API:
+
+<pre class="overflow-visible!" data-start="2939" data-end="3006"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>curl -b cookies.txt http://<IP>:3000/api/network/status
+</span></span></code></div></div></pre>
+
+#### 📶 Activar modo Hotspot manualmente:
+
+<pre class="overflow-visible!" data-start="3050" data-end="3141"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo nmcli device wifi hotspot ifname wlan0 ssid TurnitoAP password turnito1234
+</span></span></code></div></div></pre>
+
+---
+
+### 🧩 6. Recuperación ante Fallos del Servicio
+
+Si Turnito no inicia tras reiniciar el Raspberry:
+
+<pre class="overflow-visible!" data-start="3248" data-end="3334"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>cd</span><span> /home/pi/turnito
+npm install
+pm2 start index.js --name turnito
+pm2 save
+</span></span></code></div></div></pre>
+
+Verificar si el puerto 3000 está ocupado:
+
+<pre class="overflow-visible!" data-start="3379" data-end="3428"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>sudo lsof -i :3000
+sudo </span><span>kill</span><span> -9 <PID>
+</span></span></code></div></div></pre>
+
+---
+
+### 🪪 7. Reinstalación Completa
+
+**⚠️ Usa este procedimiento solo si el sistema quedó corrupto.**
+
+<pre class="overflow-visible!" data-start="3535" data-end="3755"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>cd</span><span> /home/pi
+sudo </span><span>rm</span><span> -rf turnito
+git </span><span>clone</span><span> https://github.com/tu-usuario/turnito.git
+</span><span>cd</span><span> turnito
+npm install
+sudo systemctl </span><span>enable</span><span> pigpiod
+sudo systemctl start pigpiod
+pm2 start index.js --name turnito
+pm2 save
+</span></span></code></div></div></pre>
+
+---
+
+### 🧰 8. Herramientas Avanzadas
+
+**🔁 Reiniciar Turnito sin reiniciar el Raspberry:**
+
+<pre class="overflow-visible!" data-start="3849" data-end="3880"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>pm2 restart turnito
+</span></span></code></div></div></pre>
+
+**💻 Uso del sistema:**
+
+<pre class="overflow-visible!" data-start="3906" data-end="4036"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>curl -b cookies.txt http://<IP>:3000/api/system/cpu-usage
+curl -b cookies.txt http://<IP>:3000/api/system/memory-usage
+</span></span></code></div></div></pre>
+
+**📋 Ver logs del sistema:**
+
+<pre class="overflow-visible!" data-start="4067" data-end="4139"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>curl -b cookies.txt http://<IP>:3000/api/system/logs/journal
+</span></span></code></div></div></pre>
+
+**🎯 Ver cola activa:**
+
+<pre class="overflow-visible!" data-start="4165" data-end="4234"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>curl -b cookies.txt http://<IP>:3000/api/get-active-queue
+</span></span></code></div></div></pre>
+
+---
+
+### ⚙️ 9. Configuración Avanzada
+
+**Ubicación de configuraciones:**
+
+| Archivo                           | Descripción                                                       |
+| --------------------------------- | ------------------------------------------------------------------ |
+| `config/print.json`             | Configura los campos del ticket (store, sector, message) por cola. |
+| `/boot/firmware/config.txt`     | Parámetros de video, HDMI y arranque.                             |
+| `/boot/firmware/fullpageos.txt` | Configuración de arranque FullPageOS.                             |
+
+**Ejemplo `config/print.json`:**
+
+<pre class="overflow-visible!" data-start="4639" data-end="4888"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-json"><span><span>{</span><span>
+  </span><span>"queue_1"</span><span>:</span><span></span><span>{</span><span>
+    </span><span>"store"</span><span>:</span><span></span><span>"Supermercado El Sol"</span><span>,</span><span>
+    </span><span>"sector"</span><span>:</span><span></span><span>"Carnicería"</span><span>,</span><span>
+    </span><span>"message"</span><span>:</span><span></span><span>"Gracias por su visita"</span><span>
+  </span><span>}</span><span>,</span><span>
+  </span><span>"queue_2"</span><span>:</span><span></span><span>{</span><span>
+    </span><span>"store"</span><span>:</span><span></span><span>"Farmacia Vida"</span><span>,</span><span>
+    </span><span>"sector"</span><span>:</span><span></span><span>"Mostrador"</span><span>,</span><span>
+    </span><span>"message"</span><span>:</span><span></span><span>"Cuidamos tu salud"</span><span>
+  </span><span>}</span><span>
+</span><span>}</span><span>
+</span></span></code></div></div></pre>
+
+---
+
+### 💾 10. Copias de Seguridad
+
+**Respaldar datos esenciales:**
+
+<pre class="overflow-visible!" data-start="4959" data-end="5044"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>tar -czvf backup-turnito-$(</span><span>date</span><span> +%Y%m%d).tar.gz db/ config/ public/media/
+</span></span></code></div></div></pre>
+
+**Restaurar respaldo:**
+
+<pre class="overflow-visible!" data-start="5070" data-end="5142"><div class="contain-inline-size rounded-2xl relative bg-token-sidebar-surface-primary"><div class="sticky top-9"><div class="absolute end-0 bottom-0 flex h-9 items-center pe-2"><div class="bg-token-bg-elevated-secondary text-token-text-secondary flex items-center gap-4 rounded-sm px-2 font-sans text-xs"></div></div></div><div class="overflow-y-auto p-4" dir="ltr"><code class="whitespace-pre! language-bash"><span><span>tar -xzvf backup-turnito-YYYYMMDD.tar.gz -C /home/pi/turnito
+</span></span></code></div></div></pre>
+
+---
+
+### 💡 11. Buenas Prácticas y Recomendaciones
+
+* Ejecutar `pm2 save` después de cada cambio importante.
+* Evitar cortar energía sin apagar desde el panel `/sistema/acciones`.
+* Si la CPU supera los  **70°C** , revisar refrigeración o reducir brillo HDMI.
+* Mantener fuente oficial de **5V 3A** (o superior en Pi 4/5).
+* Definir siempre los datos del ticket por cola en `config/print.json`.
+* Realizar un backup semanal del directorio `/db` y `/config`.
+
+---
+
+📘 **Guía de soporte técnico oficial – Infratec Networks (2025)**
+
+Desarrollado por **Flavio González – Infratec Networks, Uruguay**

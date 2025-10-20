@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/tabler.min.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--tblr-bg-surface);
+        }
+        .card {
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-tight py-4">
+        <div class="text-center mb-4">
+            <a href="." class="navbar-brand navbar-brand-autodark"><img src="./static/logo.svg" height="36" alt=""></a>
+        </div>
+        <div class="card card-md">
+            <div class="card-body">
+                <h2 class="h2 text-center mb-4">Login to your account</h2>
+                <% if (error) { %>
+                    <div class="alert alert-danger" role="alert">
+                        <%= error %>
+                    </div>
+                <% } %>
+                <form action="/login" method="POST" autocomplete="off" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" placeholder="your username" name="username" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">
+                            Password
+                        </label>
+                        <div class="input-group input-group-flat">
+                            <input type="password" class="form-control" placeholder="Your password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="/js/tabler.min.js"></script>
+</body>
+</html>

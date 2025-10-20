@@ -1,0 +1,258 @@
+<!--
+  File: /home/fgonzalez/turnito/views/partials/header.ejs
+  Descripción: Barra superior Turnito Admin con métricas, fecha, hostname y modales
+  Versión: 5.4 - Confirmación por modal, color dinámico y correcciones visuales
+-->
+
+<header class="header d-flex justify-content-between align-items-center px-3 py-2 bg-dark border-bottom border-secondary">
+  <!-- Lado Izquierdo -->
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <!-- Hostname -->
+    <div class="metric-badge" title="Nombre del sistema">
+      <i class="ti ti-server"></i> <span id="badgeHost">--</span>
+    </div>
+
+    <!-- Fecha y hora -->
+    <div class="metric-badge" title="Fecha y hora del sistema">
+      <i class="ti ti-clock"></i> <span id="badgeHora">--/--/-- --:--:--</span>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metric-badge" id="tempBadge" title="Temperatura CPU">
+      <i class="ti ti-temperature"></i> <span id="badgeTemp">--°C</span>
+    </div>
+    <div class="metric-badge" id="cpuBadge" title="Uso CPU">
+      <i class="ti ti-cpu"></i> <span id="badgeCpu">--%</span>
+    </div>
+    <div class="metric-badge" id="ramBadge" title="Uso RAM">
+      <i class="ti ti-memory"></i> <span id="badgeRam">--%</span>
+    </div>
+  </div>
+
+  <!-- Lado Derecho -->
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <!-- Acciones -->
+    <button class="btn btn-outline-warning btn-sm" onclick="openConfirmModal('reboot')" title="Reiniciar"><i class="ti ti-refresh"></i></button>
+    <button class="btn btn-outline-danger btn-sm" onclick="openConfirmModal('shutdown')" title="Apagar"><i class="ti ti-power"></i></button>
+    <button class="btn btn-outline-info btn-sm" onclick="openConfirmModal('update')" title="Actualizar Sistema"><i class="ti ti-arrow-up-circle"></i></button>
+
+    <!-- Red -->
+    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalRed" title="Configuración de Red"><i class="ti ti-wifi"></i></button>
+
+    <!-- HDMI -->
+    <button id="btnHdmiDiagGlobal" class="btn btn-sm btn-outline-info" title="Estado HDMI" data-bs-toggle="modal" data-bs-target="#modalHdmi">
+      <i class="ti ti-device-desktop"></i>
+    </button>
+
+    <!-- Usuario -->
+    <div class="dropdown">
+      <a href="#" class="text-light text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="ti ti-user-circle"></i> <%= username || 'Invitado' %>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a href="/logout" class="dropdown-item"><i class="ti ti-logout"></i> Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- 🔹 Modal Confirmación -->
+<div class="modal fade" id="modalConfirm" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="ti ti-alert-triangle"></i> Confirmar acción</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage" class="text-center mb-0"></p>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button id="confirmExecute" class="btn btn-primary">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🔹 Modal de Red -->
+<div class="modal fade" id="modalRed" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="ti ti-wifi"></i> Configuración de Red</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formRed">
+          <div class="mb-3">
+            <label class="form-label">Modo de conexión</label>
+            <select class="form-select bg-dark text-light border-secondary" id="modo">
+              <option value="client">Cliente WiFi</option>
+              <option value="hotspot">Punto de acceso</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">SSID</label>
+            <input type="text" id="ssid" class="form-control bg-dark text-light border-secondary" placeholder="Nombre de red">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" id="pass" class="form-control bg-dark text-light border-secondary" placeholder="********">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-primary" onclick="guardarRed()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🖥️ Modal HDMI -->
+<div class="modal fade" id="modalHdmi" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content bg-dark text-light border border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="ti ti-device-desktop"></i> Estado del Monitor HDMI</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="hdmiStatus">
+          <p class="text-center text-secondary">Obteniendo información...</p>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-outline-info btn-sm" onclick="actualizarHdmi()">Actualizar</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const badgeHost = document.getElementById('badgeHost');
+  const badgeHora = document.getElementById('badgeHora');
+  const badgeTemp = document.getElementById('badgeTemp');
+  const badgeCpu = document.getElementById('badgeCpu');
+  const badgeRam = document.getElementById('badgeRam');
+  const tempBadge = document.getElementById('tempBadge');
+  const cpuBadge = document.getElementById('cpuBadge');
+  const ramBadge = document.getElementById('ramBadge');
+  const hdmiStatus = document.getElementById('hdmiStatus');
+
+  const getJSON = async (url) => {
+    try {
+      const res = await fetch(url, { credentials: 'include' });
+      return await res.json();
+    } catch { return {}; }
+  };
+
+  // 🕒 Fecha + hora
+  setInterval(() => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('es-UY');
+    const timeStr = now.toLocaleTimeString('es-UY', { hour12: false });
+    badgeHora.textContent = `${dateStr} ${timeStr}`;
+  }, 1000);
+
+  // 🎨 Colores dinámicos
+  const colorize = (el, val, tLow, tHigh) => {
+    el.style.color = val < tLow ? '#00ff99' : val < tHigh ? '#ffcc00' : '#ff5555';
+  };
+
+  // 🔁 Actualización de métricas
+  async function updateMetrics() {
+    const [temp, cpu, ram, host] = await Promise.all([
+      getJSON('/api/system/cpu-temp'),
+      getJSON('/api/system/cpu-usage'),
+      getJSON('/api/system/memory-usage'),
+      getJSON('/api/system/hostname')
+    ]);
+    if (temp.temperature) {
+      const t = temp.temperature;
+      badgeTemp.textContent = `${t}°C`;
+      colorize(tempBadge, t, 55, 70);
+    }
+    if (cpu.cpu_usage) {
+      const c = cpu.cpu_usage;
+      badgeCpu.textContent = `${c}%`;
+      colorize(cpuBadge, c, 50, 80);
+    }
+    if (ram.ram) {
+      const r = ram.ram;
+      badgeRam.textContent = `${r}%`;
+      colorize(ramBadge, r, 60, 85);
+    }
+    badgeHost.textContent = host.hostname || 'raspberrypi';
+  }
+
+  // 🖥️ HDMI
+  window.actualizarHdmi = async () => {
+    hdmiStatus.innerHTML = `<p class="text-center text-secondary">Actualizando...</p>`;
+    const d = await getJSON('/api/hdmi/status');
+    hdmiStatus.innerHTML = d && d.model
+      ? `<p><i class="ti ti-monitor"></i> <b>Modelo:</b> ${d.model}<br>
+         <i class="ti ti-arrows-maximize"></i> <b>Resolución:</b> ${d.resolution}<br>
+         <i class="ti ti-wave-sine"></i> <b>Frecuencia:</b> ${d.refresh}<br>
+         <i class="ti ti-power"></i> <b>Estado:</b> ${d.state}</p>`
+      : `<p class="text-danger text-center"><i class="ti ti-alert-triangle"></i> No se detecta monitor HDMI.</p>`;
+  };
+
+  // 🔹 Confirmación modal para acciones
+  window.openConfirmModal = (action) => {
+    const mensajes = {
+      reboot: "¿Deseas reiniciar el sistema?",
+      shutdown: "¿Deseas apagar el Raspberry Pi?",
+      update: "¿Deseas actualizar el sistema operativo?"
+    };
+    const msg = document.getElementById('confirmMessage');
+    const btn = document.getElementById('confirmExecute');
+    msg.textContent = mensajes[action];
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirm'));
+    modal.show();
+    btn.onclick = async () => {
+      const endpoint = action === 'update' ? '/api/system/update-os' : `/api/system/${action}`;
+      const res = await fetch(endpoint, { method: 'POST' });
+      modal.hide();
+      alert(res.ok ? 'Acción ejecutada correctamente.' : 'Error al ejecutar acción.');
+    };
+  };
+
+  // 🔹 Guardar red
+  window.guardarRed = async () => {
+    const data = {
+      mode: document.getElementById('modo').value,
+      ssid: document.getElementById('ssid').value,
+      password: document.getElementById('pass').value
+    };
+    const res = await fetch('/api/network/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    alert(res.ok ? 'Configuración aplicada correctamente.' : 'Error al aplicar red.');
+  };
+
+  updateMetrics();
+  setInterval(updateMetrics, 10000);
+});
+</script>
+
+<style>
+.metric-badge {
+  background: #1e2630;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9cc9ff;
+  transition: color 0.3s;
+}
+.metric-badge i { font-size: 1rem; }
+.btn-outline-danger i { color: #ff5555 !important; }
+</style>

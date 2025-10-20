@@ -1,0 +1,87 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/logs.ejs
+  Descripción: Visor de logs en tiempo real con filtros locales y pestañas
+  Versión: 2.9 - Offline Edition
+-->
+
+<div class="container-fluid">
+  <h2 class="text-info mb-3"><i class="ti ti-terminal-2"></i> Visor de Logs en Tiempo Real</h2>
+
+  <div class="card bg-black border-0 shadow-sm p-3">
+    <ul class="nav nav-tabs mb-3" id="logTabs">
+      <li class="nav-item"><a class="nav-link active" data-tab="journal" href="#">Journal</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="pm2" href="#">PM2</a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="kernel" href="#">Kernel</a></li>
+    </ul>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <input id="logFilter" type="text" class="form-control bg-dark text-light border-0 w-75" placeholder="Filtrar logs (ej: error, warning, reboot)">
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-info btn-sm" id="refreshLogs"><i class="ti ti-refresh"></i> Actualizar</button>
+        <button class="btn btn-outline-secondary btn-sm" id="copyLogs"><i class="ti ti-clipboard"></i> Copiar</button>
+      </div>
+    </div>
+
+    <pre id="logContent" class="bg-black text-success p-3 rounded small" style="height:420px; overflow-y:auto; white-space:pre-wrap;">Cargando logs...</pre>
+  </div>
+</div>
+
+<style>
+  .nav-link { cursor: pointer; }
+  .nav-link.active {
+    background-color: #1e2630 !important;
+    border-radius: 6px;
+    color: #00bfff !important;
+  }
+  pre {
+    font-family: monospace;
+    font-size: 0.85rem;
+    background: transparent;
+  }
+</style>
+
+<script>
+(async () => {
+  const logContent = document.getElementById('logContent');
+  const filterInput = document.getElementById('logFilter');
+  const refreshBtn = document.getElementById('refreshLogs');
+  const copyBtn = document.getElementById('copyLogs');
+  const tabs = document.querySelectorAll('#logTabs .nav-link');
+
+  let currentTab = 'journal';
+  let logData = '';
+
+  const fetchLogs = async (type) => {
+    logContent.textContent = 'Cargando logs...';
+    try {
+      const res = await fetch(`/api/system/logs/${type}`, { credentials: 'include' });
+      const data = await res.json();
+      logData = data.logs || '(sin datos)';
+      logContent.textContent = logData;
+    } catch {
+      logContent.textContent = 'Error cargando logs.';
+    }
+  };
+
+  const filterLogs = () => {
+    const q = filterInput.value.toLowerCase();
+    logContent.textContent = q ? logData.split('\n').filter(l => l.toLowerCase().includes(q)).join('\n') : logData;
+  };
+
+  filterInput.addEventListener('input', filterLogs);
+  refreshBtn.onclick = () => fetchLogs(currentTab);
+  copyBtn.onclick = () => navigator.clipboard.writeText(logData);
+
+  tabs.forEach(t => {
+    t.onclick = () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      currentTab = t.dataset.tab;
+      fetchLogs(currentTab);
+    };
+  });
+
+  fetchLogs('journal');
+  setInterval(() => fetchLogs(currentTab), 3000);
+})();
+</script>

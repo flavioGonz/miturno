@@ -1,0 +1,163 @@
+<!--
+  File: /home/fgonzalez/turnito/views/layout.ejs
+  Descripción: Layout base Turnito Admin v3.9 - Dark Unified Edition
+  Versión: 3.9 (Total integración con header, sidebar y métricas)
+-->
+
+<!DOCTYPE html>
+<html lang="es" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || 'Turnito Admin' %></title>
+
+  <!-- Recursos locales -->
+  <link rel="stylesheet" href="/css/theme-dark.css">
+  <link rel="stylesheet" href="/css/tabler.min.css" />
+  <link rel="stylesheet" href="/icons/tabler-icons.min.css" />
+  <link rel="icon" href="/img/favicon.ico">
+
+  <style>
+    body {
+      background-color: #0b0d10;
+      color: #e6edf3;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: row;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar */
+    .navbar-vertical, .sidebar {
+      width: 240px;
+      background-color: #11151a;
+      border-right: 1px solid #222;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    /* Wrapper */
+    .page-wrapper {
+      flex: 1;
+      margin-left: 240px;
+      padding: 0;
+      min-height: 100vh;
+      background-color: #0b0d10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header fijo */
+    .header {
+      background-color: #0f1419;
+      border-bottom: 1px solid #222;
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    main {
+      flex: 1;
+      padding: 1.5rem 2rem;
+    }
+
+    /* Métricas estilo badge */
+    .metric-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      background-color: #1e2630;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-left: 6px;
+      color: #e6edf3;
+      font-weight: 500;
+    }
+    .metric-badge i {
+      font-size: 1rem;
+    }
+
+    @media (max-width: 992px) {
+      .navbar-vertical, .sidebar {
+        position: relative;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #222;
+      }
+      .page-wrapper {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <div class="page-wrapper">
+      <!-- Header -->
+      <%- include('partials/header') %>
+
+
+
+      <!-- Contenido principal -->
+      <main class="mt-2">
+        <%- body %>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/tabler.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+
+  <script>
+    async function getJSON(url) {
+      try {
+        const res = await fetch(url, { credentials: 'include' });
+        const text = await res.text();
+        return JSON.parse(text);
+      } catch {
+        return {};
+      }
+    }
+
+    async function updateBadges() {
+      try {
+        const [temp, cpu, ram] = await Promise.all([
+          getJSON('/api/system/cpu-temp'),
+          getJSON('/api/system/cpu-usage'),
+          getJSON('/api/system/memory-usage')
+        ]);
+
+        document.getElementById('badgeTemp').innerText = temp.temperature ? temp.temperature + '°C' : '--';
+        document.getElementById('badgeCpu').innerText = cpu.cpu_usage ? cpu.cpu_usage + '%' : '--';
+        document.getElementById('badgeRam').innerText = ram.ram ? ram.ram + '%' : '--';
+      } catch (e) {
+        console.warn('Error actualizando badges', e);
+      }
+    }
+
+    updateBadges();
+    setInterval(updateBadges, 10000);
+  </script>
+</body>
+</html>

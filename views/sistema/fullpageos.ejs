@@ -1,0 +1,24 @@
+<!-- FullPageOS -->
+<div class="container-fluid">
+  <h2 class="text-info mb-3"><i class="ti ti-browser"></i> FullPageOS</h2>
+  <label>config.txt</label>
+  <textarea id="configTxt" class="form-control bg-black text-light" style="height:200px;"></textarea>
+  <button class="btn btn-success mt-2" id="saveConfig"><i class="ti ti-device-floppy"></i> Guardar config.txt</button>
+  <label class="mt-4">fullpageos.txt</label>
+  <textarea id="fpTxt" class="form-control bg-black text-light" style="height:200px;"></textarea>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-success" id="saveFP"><i class="ti ti-device-floppy"></i> Guardar fullpageos.txt</button>
+    <button class="btn btn-warning" id="restartFP"><i class="ti ti-refresh"></i> Reiniciar FullPageOS</button>
+  </div>
+</div>
+
+<script>
+(async()=>{
+  const j=async(u,o={})=>(await fetch(u,{credentials:'include',...o})).json();
+  const c=await j('/api/system/fullpageos/config');const f=await j('/api/system/fullpageos/settings');
+  configTxt.value=c.config||'';fpTxt.value=f.config||'';
+  saveConfig.onclick=()=>fetch('/api/system/fullpageos/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:configTxt.value})}).then(()=>alert('config.txt guardado'));
+  saveFP.onclick=()=>fetch('/api/system/fullpageos/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:fpTxt.value})}).then(()=>alert('fullpageos.txt guardado'));
+  restartFP.onclick=()=>fetch('/api/system/fullpageos/restart',{method:'POST'}).then(()=>alert('FullPageOS reiniciado'));
+})();
+</script>

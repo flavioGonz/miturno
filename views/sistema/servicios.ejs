@@ -1,0 +1,142 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/servicios.ejs
+  Descripción: Gestión completa de servicios (listar, activar/desactivar, reiniciar)
+  Versión: 2.6 - Offline Edition
+-->
+
+<div class="container-fluid">
+  <h2 class="text-info mb-4">
+    <i class="ti ti-settings"></i> Servicios del Sistema
+  </h2>
+
+  <div class="table-responsive">
+    <table class="table table-borderless align-middle text-light" id="servicesTable">
+      <thead class="border-bottom border-secondary">
+        <tr>
+          <th>Servicio</th>
+          <th class="text-center">Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="3" class="text-center text-muted py-3">Cargando servicios...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3">
+    <button class="btn btn-outline-info" id="refreshServices">
+      <i class="ti ti-refresh"></i> Actualizar lista
+    </button>
+  </div>
+</div>
+
+<style>
+  #servicesTable tbody tr {
+    border-bottom: 1px solid #1f252b;
+    transition: background-color 0.15s;
+  }
+  #servicesTable tbody tr:hover {
+    background-color: #1a1f25;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+  }
+  .switch input { display: none; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0;
+    right: 0; bottom: 0;
+    background-color: #555;
+    transition: .3s;
+    border-radius: 24px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+  }
+  input:checked + .slider {
+    background-color: #00b894;
+  }
+  input:checked + .slider:before {
+    transform: translateX(22px);
+  }
+</style>
+
+<script>
+(async () => {
+  const tableBody = document.querySelector('#servicesTable tbody');
+  const refreshBtn = document.getElementById('refreshServices');
+
+  async function getJSON(url, opts = {}) {
+    const res = await fetch(url, { credentials: 'include', ...opts });
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return {}; }
+  }
+
+  async function loadServices() {
+    tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Cargando...</td></tr>`;
+    const data = await getJSON('/api/system/services');
+    if (!data.services) {
+      tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error al obtener servicios</td></tr>`;
+      return;
+    }
+
+    const lines = data.services.split('\n').filter(l => l.includes('.service'));
+    tableBody.innerHTML = '';
+
+    lines.forEach(line => {
+      const cols = line.trim().split(/\s+/);
+      const name = cols[0];
+      const state = cols[1] || '';
+      const enabled = state.includes('enabled');
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><i class="ti ti-cpu text-secondary me-2"></i>${name}</td>
+        <td class="text-center">
+          <label class="switch">
+            <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleService('${name}', this.checked)">
+            <span class="slider"></span>
+          </label>
+        </td>
+        <td class="text-end">
+          <button class="btn btn-outline-warning btn-sm" onclick="restartService('${name}')">
+            <i class="ti ti-rotate-clockwise"></i> Reiniciar
+          </button>
+        </td>`;
+      tableBody.appendChild(row);
+    });
+  }
+
+  window.toggleService = async (name, state) => {
+    const action = state ? 'enable' : 'disable';
+    const res = await fetch(`/api/system/service/${name}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    alert(data.message || 'Acción ejecutada');
+  };
+
+  window.restartService = async (name) => {
+    const res = await fetch(`/api/system/service/${name}/restart`, { method: 'POST', credentials: 'include' });
+    const data = await res.json();
+    alert(data.message || 'Servicio reiniciado');
+  };
+
+  refreshBtn.onclick = loadServices;
+  loadServices();
+})();
+</script>

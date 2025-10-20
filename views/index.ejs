@@ -1,0 +1,57 @@
+<div class="page-header d-print-none">
+    <div class="row align-items-center">
+        <div class="col">
+            <h1 class="page-title">Colas</h1>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-new-queue">Nueva Cola</a>
+        </div>
+    </div>
+</div>
+<div class="row row-cards" id="queue-list"></div>
+<div class="modal" id="modal-new-queue" tabindex="-1">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Cola</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" id="queue-name-input" placeholder="Nombre de la cola">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="create-queue-btn">Crear</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const queueList = document.getElementById('queue-list');
+        const createBtn = document.getElementById('create-queue-btn');
+        const nameInput = document.getElementById('queue-name-input');
+        const fetchQueues = () => {
+            fetch('/api/queues').then(res => res.json()).then(queues => {
+                queueList.innerHTML = '';
+                queues.forEach(q => {
+                    const el = document.createElement('div');
+                    el.className = 'col-md-6 col-lg-4';
+                    el.innerHTML = `<div class="card"><div class="card-body"><h3 class="card-title">${q.name}</h3><a href="/queue/${q.id}" class="btn btn-primary">Ver</a></div></div>`;
+                    queueList.appendChild(el);
+                });
+            });
+        };
+        createBtn.addEventListener('click', () => {
+            fetch('/api/queues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nameInput.value })
+            }).then(() => {
+                nameInput.value = '';
+                fetchQueues();
+                new bootstrap.Modal(document.getElementById('modal-new-queue')).hide();
+            });
+        });
+        fetchQueues();
+    });
+</script>

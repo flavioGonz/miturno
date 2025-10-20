@@ -1,0 +1,141 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/resumen.ejs
+  Descripción: Monitoreo con alertas inteligentes de temperatura, CPU y RAM
+  Versión: 2.8 - Offline Edition
+-->
+
+<div class="container-fluid">
+  <h2 class="text-info mb-4">
+    <i class="ti ti-activity"></i> Monitoreo y Alertas
+  </h2>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h5 class="text-light"><i class="ti ti-cpu me-2"></i> CPU (%)</h5>
+        <canvas id="cpuChart" height="160"></canvas>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h5 class="text-light"><i class="ti ti-device-memory me-2"></i> RAM (%)</h5>
+        <canvas id="ramChart" height="160"></canvas>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h5 class="text-light"><i class="ti ti-temperature me-2"></i> Temp (°C)</h5>
+        <canvas id="tempChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 card bg-black border-0 shadow-sm p-3">
+    <h5 class="text-light"><i class="ti ti-info-circle"></i> Estado del Sistema</h5>
+    <p class="text-light small mb-1"><b>Procesos:</b> <span id="procCount">--</span></p>
+    <p class="text-light small mb-1"><b>SWAP:</b> <span id="swapUsage">--</span></p>
+    <p class="text-light small mb-1"><b>Disco:</b> <span id="diskUsage">--</span></p>
+    <p class="text-light small mb-1"><b>Uptime:</b> <span id="uptime">--</span></p>
+  </div>
+
+  <!-- Contenedor de alertas -->
+  <div id="alertContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 10000;"></div>
+</div>
+
+<style>
+  .card { border-radius: 8px; }
+  .alert-box {
+    background: #111;
+    color: #fff;
+    border-left: 4px solid #ff5252;
+    padding: 10px 15px;
+    margin-top: 10px;
+    border-radius: 6px;
+    box-shadow: 0 0 10px #0005;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  .alert-box.warning { border-left-color: #f7c948; }
+  .alert-box.danger { border-left-color: #ff5252; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script src="/js/chart.umd.js"></script>
+<script>
+(async () => {
+  const ctxCPU = document.getElementById('cpuChart').getContext('2d');
+  const ctxRAM = document.getElementById('ramChart').getContext('2d');
+  const ctxTEMP = document.getElementById('tempChart').getContext('2d');
+  const alertContainer = document.getElementById('alertContainer');
+
+  const makeChart = (ctx, color) => new Chart(ctx, {
+    type: 'line',
+    data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: color + '33', tension: 0.3 }] },
+    options: {
+      responsive: true, animation: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { min: 0, max: 100, ticks: { color: '#aaa' }, grid: { color: '#222' } } }
+    }
+  });
+
+  const cpuChart = makeChart(ctxCPU, '#00bfff');
+  const ramChart = makeChart(ctxRAM, '#22cc88');
+  const tempChart = makeChart(ctxTEMP, '#ff5555');
+
+  async function getJSON(url) {
+    const res = await fetch(url, { credentials: 'include' });
+    const txt = await res.text();
+    try { return JSON.parse(txt); } catch { return {}; }
+  }
+
+  function notify(msg, type = 'warning') {
+    const div = document.createElement('div');
+    div.className = `alert-box ${type}`;
+    div.textContent = msg;
+    alertContainer.appendChild(div);
+    if (type !== 'danger') setTimeout(() => div.remove(), 6000);
+    try { new Audio('/media/beep.wav').play(); } catch {}
+  }
+
+  function add(chart, val) {
+    const d = chart.data.datasets[0].data;
+    d.push(parseFloat(val || 0));
+    if (d.length > 20) d.shift();
+    chart.update();
+  }
+
+  async function update() {
+    const [cpu, mem, temp, swap, disk, proc, up] = await Promise.all([
+      getJSON('/api/system/cpu-usage'),
+      getJSON('/api/system/memory-usage'),
+      getJSON('/api/system/cpu-temp'),
+      getJSON('/api/system/swap-usage'),
+      getJSON('/api/system/disk-usage'),
+      getJSON('/api/system/process-count'),
+      getJSON('/api/system/uptime')
+    ]);
+
+    const cpuVal = parseFloat(cpu.cpu_usage || 0);
+    const ramVal = parseFloat(mem.ram || 0);
+    const tempVal = parseFloat(temp.temperature || 0);
+
+    add(cpuChart, cpuVal);
+    add(ramChart, ramVal);
+    add(tempChart, tempVal);
+
+    document.getElementById('procCount').textContent = proc.process_count || '--';
+    document.getElementById('swapUsage').textContent = swap.swap || '--';
+    document.getElementById('diskUsage').textContent = disk.pct || '--';
+    document.getElementById('uptime').textContent = up.uptime || '--';
+
+    if (cpuVal > 85) notify(`⚠️ CPU alta: ${cpuVal}%`, 'warning');
+    if (ramVal > 90) notify(`🚨 RAM al ${ramVal}%`, 'danger');
+    if (tempVal > 75) notify(`🔥 Temperatura elevada: ${tempVal}°C`, 'danger');
+  }
+
+  update();
+  setInterval(update, 5000);
+})();
+</script>

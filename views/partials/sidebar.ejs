@@ -1,0 +1,95 @@
+<!--
+  File: /home/fgonzalez/turnito/views/partials/sidebar.ejs
+  Descripción: Menú lateral de navegación Turnito Admin
+  Versión: 5.1 - Ícono GPIO actualizado
+-->
+
+<nav class="sidebar navbar-vertical bg-dark">
+  <div class="sidebar-content p-3">
+    <!-- Logo -->
+    <div class="d-flex align-items-center justify-content-center mb-4">
+      <img src="/img/logo.png" alt="Logo" width="148" height="93" style="filter: brightness(1.2);">
+    </div>
+
+    <!-- Secciones -->
+    <ul class="nav flex-column gap-1 text-start">
+
+      <!-- Dashboard -->
+      <li class="nav-item">
+        <a href="/" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-home"></i> <span>Inicio</span>
+        </a>
+      </li>
+
+      <!-- Sistema -->
+      <li class="nav-item mt-3">
+        <div class="text-secondary small fw-bold mb-1 text-uppercase">Sistema</div>
+        <a href="/sistema/resumen" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-dashboard"></i> <span>Resumen</span>
+        </a>
+        <a href="/sistema/servicios" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-cpu"></i> <span>Servicios</span>
+        </a>
+        <a href="/sistema/fullpageos" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-settings-automation"></i> <span>FullPageOS</span>
+        </a>
+        <a href="/sistema/pantallas" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-device-desktop"></i> <span>Pantallas</span>
+        </a>
+        <a href="/sistema/impresion" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-printer"></i> <span>Impresión</span>
+        </a>
+        <a href="/sistema/logs" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-terminal-2"></i> <span>Logs</span>
+        </a>
+      </li>
+
+      <!-- Operaciones -->
+      <li class="nav-item mt-3">
+        <div class="text-secondary small fw-bold mb-1 text-uppercase">Operaciones</div>
+        <a href="/sistema/publicidad" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-photo"></i> <span>Publicidad</span>
+        </a>
+        <a href="/sistema/control" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-users"></i> <span>Control de Turnos</span>
+        </a>
+        <a href="/sistema/gpio" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-circuit-bulb"></i> <span>Pines (GPIO)</span>
+        </a>
+      </li>
+
+      <!-- Sesión -->
+      <li class="nav-item mt-3">
+        <div class="text-secondary small fw-bold mb-1 text-uppercase">Sesión</div>
+        <a href="/logout" class="nav-link d-flex align-items-center gap-2 text-light">
+          <i class="ti ti-logout"></i> <span>Cerrar Sesión</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<style>
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-right: 1px solid #222;
+  background-color: #0d1117;
+  overflow-y: auto;
+}
+.nav-link {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: background-color 0.15s;
+}
+.nav-link:hover { background-color: #1e2630; }
+.nav-link.active {
+  background-color: #00bfff22;
+  color: #00bfff !important;
+  font-weight: 600;
+}
+</style>

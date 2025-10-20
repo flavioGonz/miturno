@@ -1,0 +1,311 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/control.ejs
+  Descripción: Panel de Control de Turnos (v6.3) - Full Tabler / Sin Bootstrap JS
+  Autor: Flavio González - Infratec Networks
+-->
+
+<div class="container-fluid py-4">
+  <!-- 🧭 HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-cyan fw-bold m-0">
+      <i class="ti ti-users"></i> Panel de Control de Turnos
+    </h2>
+    <div class="d-flex align-items-center gap-3">
+      <div id="activeQueueBanner" class="badge bg-cyan-lt text-dark d-none">
+        <i class="ti ti-bolt me-1"></i> Cola activa: <strong id="activeQueueName">-</strong>
+      </div>
+      <button id="btnNewQueue" class="btn btn-outline-cyan">
+        <i class="ti ti-plus"></i> Nueva Cola
+      </button>
+    </div>
+  </div>
+
+  <div id="alertBox" class="alert d-none"></div>
+
+  <div class="row g-4">
+    <!-- 📋 COLAS -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-dark text-light border-0">
+          <h4 class="m-0"><i class="ti ti-list"></i> Colas Activas</h4>
+        </div>
+        <div class="card-body bg-dark text-light" id="queueList">
+          Cargando...
+        </div>
+      </div>
+    </div>
+
+    <!-- 🎛️ PANEL DE CONTROL -->
+    <div class="col-lg-8">
+      <div id="turnPanel" class="card border-0 shadow-sm d-none">
+        <div class="card-header bg-dark text-light d-flex justify-content-between align-items-center">
+          <h4 class="m-0"><i class="ti ti-bell"></i> Turnos - <span id="queueTitle"></span></h4>
+          <button id="btnBack" class="btn btn-outline-secondary btn-sm">
+            <i class="ti ti-arrow-left"></i> Volver
+          </button>
+        </div>
+        <div class="card-body bg-dark text-light">
+          <div class="text-center my-4">
+            <div class="text-muted small">Turno actual</div>
+            <div id="currentTurnNumber" class="display-1 fw-bold text-cyan">--</div>
+            <div id="currentTurnStatus" class="text-secondary">Esperando llamada</div>
+          </div>
+
+          <div class="d-flex justify-content-center flex-wrap gap-2 mb-4">
+            <button id="btnNext" class="btn btn-success btn-lg">
+              <i class="ti ti-player-skip-forward me-1"></i> Llamar
+            </button>
+            <button id="btnComplete" class="btn btn-primary btn-lg">
+              <i class="ti ti-check me-1"></i> Completar
+            </button>
+            <button id="btnSkip" class="btn btn-warning btn-lg text-dark">
+              <i class="ti ti-skip-forward me-1"></i> Saltar
+            </button>
+            <button id="btnAddTurn" class="btn btn-outline-cyan btn-lg">
+              <i class="ti ti-plus me-1"></i> Agregar
+            </button>
+          </div>
+
+          <h5 class="text-light mb-3"><i class="ti ti-history"></i> Últimos Turnos</h5>
+          <div id="turnList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🧱 MODAL NATIVO -->
+<div id="queueModal" class="d-none modal-overlay">
+  <div class="modal-window card shadow-lg">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4 class="m-0 text-cyan fw-bold">
+        <i class="ti ti-list"></i> <span id="queueModalTitle">Nueva Cola</span>
+      </h4>
+      <button id="closeQueueModal" class="btn btn-icon btn-outline-secondary btn-sm">
+        <i class="ti ti-x"></i>
+      </button>
+    </div>
+    <div class="card-body">
+      <input type="text" id="queueNameInput" class="form-control mb-3" placeholder="Nombre de la cola" />
+      <input type="hidden" id="queueIdInput" />
+      <div class="text-end">
+        <button id="saveQueueBtn" class="btn btn-primary">
+          <i class="ti ti-device-floppy"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const queueList = document.getElementById("queueList");
+  const alertBox = document.getElementById("alertBox");
+  const turnPanel = document.getElementById("turnPanel");
+  const queueTitle = document.getElementById("queueTitle");
+  const btnBack = document.getElementById("btnBack");
+  const btnNext = document.getElementById("btnNext");
+  const btnComplete = document.getElementById("btnComplete");
+  const btnSkip = document.getElementById("btnSkip");
+  const btnAddTurn = document.getElementById("btnAddTurn");
+  const currentTurnNumber = document.getElementById("currentTurnNumber");
+  const currentTurnStatus = document.getElementById("currentTurnStatus");
+  const btnNewQueue = document.getElementById("btnNewQueue");
+  const socket = io();
+
+  let currentQueue = null;
+  let currentTurn = null;
+
+  // Modal nativo
+  const queueModal = document.getElementById("queueModal");
+  const closeQueueModal = document.getElementById("closeQueueModal");
+  const queueModalTitle = document.getElementById("queueModalTitle");
+  const queueNameInput = document.getElementById("queueNameInput");
+  const queueIdInput = document.getElementById("queueIdInput");
+  const saveQueueBtn = document.getElementById("saveQueueBtn");
+
+  function showModal(edit = false, queue = null) {
+    queueModal.classList.remove("d-none");
+    document.body.style.overflow = "hidden";
+    if (edit && queue) {
+      queueModalTitle.textContent = "Editar Cola";
+      queueNameInput.value = queue.name;
+      queueIdInput.value = queue.id;
+    } else {
+      queueModalTitle.textContent = "Nueva Cola";
+      queueNameInput.value = "";
+      queueIdInput.value = "";
+    }
+  }
+
+  function hideModal() {
+    queueModal.classList.add("d-none");
+    document.body.style.overflow = "auto";
+  }
+
+  closeQueueModal.onclick = hideModal;
+  btnNewQueue.onclick = () => showModal(false);
+
+  const showMsg = (msg, type = "info") => {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = msg;
+    alertBox.classList.remove("d-none");
+    setTimeout(() => alertBox.classList.add("d-none"), 2500);
+  };
+
+  const getJSON = async (url, opts = {}) => {
+    const res = await fetch(url, { credentials: "include", ...opts });
+    try { return await res.json(); } catch { return {}; }
+  };
+
+  async function loadQueues() {
+    const data = await getJSON("/api/queues");
+    queueList.innerHTML = "";
+    if (!data.length) {
+      queueList.innerHTML = '<div class="text-muted text-center">No hay colas registradas.</div>';
+      return;
+    }
+    data.forEach(q => {
+      const card = document.createElement("div");
+      card.className = "card bg-dark border border-secondary p-3 mb-2 shadow-sm";
+      card.innerHTML = `
+        <h5 class="text-light fw-bold mb-3"><i class="ti ti-stack"></i> ${q.name}</h5>
+        <div class="d-flex justify-content-center gap-2">
+          <button class="btn btn-sm btn-outline-info openQueue"><i class="ti ti-terminal"></i></button>
+          <button class="btn btn-sm btn-outline-warning editQueue"><i class="ti ti-pencil"></i></button>
+          <button class="btn btn-sm btn-outline-danger deleteQueue"><i class="ti ti-trash"></i></button>
+        </div>
+      `;
+      card.querySelector(".openQueue").onclick = () => openQueue(q);
+      card.querySelector(".editQueue").onclick = () => showModal(true, q);
+      card.querySelector(".deleteQueue").onclick = async () => {
+        if (!confirm(`¿Eliminar la cola "${q.name}"?`)) return;
+        const res = await fetch(`/api/queues/${q.id}`, { method: "DELETE", credentials: "include" });
+        if (res.ok) { showMsg("Cola eliminada", "danger"); loadQueues(); }
+      };
+      queueList.appendChild(card);
+    });
+  }
+
+  saveQueueBtn.onclick = async () => {
+    const name = queueNameInput.value.trim();
+    const id = queueIdInput.value;
+    if (!name) return showMsg("El nombre no puede estar vacío", "warning");
+
+    if (id) {
+      const res = await fetch(`/api/queues/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) { showMsg("Cola actualizada", "success"); hideModal(); loadQueues(); }
+    } else {
+      const res = await fetch("/api/queues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) { showMsg("Cola creada", "success"); hideModal(); loadQueues(); }
+    }
+  };
+
+  async function openQueue(queue) {
+    currentQueue = queue;
+    queueTitle.textContent = queue.name;
+    document.querySelector(".card-body.bg-dark.text-light").classList.add("d-none");
+    turnPanel.classList.remove("d-none");
+
+    const banner = document.getElementById("activeQueueBanner");
+    document.getElementById("activeQueueName").textContent = queue.name;
+    banner.classList.remove("d-none");
+
+    await fetch(`/api/set-active-queue/${queue.id}`, { method: "POST" });
+    await loadTurns();
+  }
+
+  btnBack.onclick = () => {
+    turnPanel.classList.add("d-none");
+    document.querySelector(".card-body.bg-dark.text-light").classList.remove("d-none");
+    currentQueue = null;
+  };
+
+  async function loadTurns() {
+    const turns = await getJSON(`/api/queues/${currentQueue.id}/turns`);
+    const turnList = document.getElementById("turnList");
+    turnList.innerHTML = "";
+    if (!turns.length) {
+      currentTurnNumber.textContent = "--";
+      currentTurnStatus.textContent = "Sin turnos aún";
+      return;
+    }
+    currentTurn = turns.find(t => t.status === "calling");
+    if (currentTurn) {
+      currentTurnNumber.textContent = currentTurn.turn_number;
+      currentTurnStatus.textContent = "En atención";
+    } else {
+      const last = turns[turns.length - 1];
+      currentTurnNumber.textContent = last.turn_number;
+      currentTurnStatus.textContent = "Esperando llamada";
+    }
+    turns.slice(-6).reverse().forEach(t => {
+      const el = document.createElement("div");
+      el.className = `alert mb-2 ${
+        t.status === "calling" ? "alert-info" :
+        t.status === "completed" ? "alert-success" :
+        t.status === "skipped" ? "alert-warning" : "alert-secondary"
+      }`;
+      el.innerHTML = `<strong>#${t.turn_number}</strong> - ${t.status}`;
+      turnList.appendChild(el);
+    });
+  }
+
+  btnAddTurn.onclick = async () => {
+    const res = await fetch(`/api/queues/${currentQueue.id}/turns`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    showMsg(`Turno ${data.turn_number} agregado`, "success");
+    loadTurns();
+  };
+  btnNext.onclick = async () => {
+    const res = await fetch(`/api/queues/${currentQueue.id}/call-next`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    showMsg(data.message || "Siguiente turno llamado", "info");
+    loadTurns();
+  };
+  btnComplete.onclick = async () => {
+    if (!currentTurn) return showMsg("No hay turno activo.", "warning");
+    await fetch(`/api/turns/${currentTurn.id}/complete`, { method: "PUT", credentials: "include" });
+    showMsg("Turno completado.", "success");
+    loadTurns();
+  };
+  btnSkip.onclick = async () => {
+    if (!currentTurn) return showMsg("No hay turno activo.", "warning");
+    await fetch(`/api/turns/${currentTurn.id}/skip`, { method: "PUT", credentials: "include" });
+    showMsg("Turno saltado.", "warning");
+    loadTurns();
+  };
+
+  loadQueues();
+});
+</script>
+
+<style>
+.text-cyan { color: #00bfff !important; }
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.modal-window {
+  width: 90%;
+  max-width: 380px;
+  background: #111821;
+  border-radius: 12px;
+}
+</style>

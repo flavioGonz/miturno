@@ -1,0 +1,157 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/gpio.ejs
+  Descripción: Panel visual y en tiempo real de pines GPIO del Raspberry Pi
+  Versión: 2.1 - Turnito Admin Hardware Panel (Socket.IO + Live LEDs + Reconexión)
+-->
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0">
+      <i class="ti ti-circuit-board"></i> Pines GPIO
+    </h2>
+    <button id="btnRefresh" class="btn btn-outline-info">
+      <i class="ti ti-refresh"></i> Actualizar Estado
+    </button>
+  </div>
+
+  <div id="alertBox" class="alert d-none mt-3"></div>
+
+  <div class="card bg-dark border-0 shadow-sm p-4">
+    <h4 class="text-light mb-3">
+      <i class="ti ti-chip"></i> Estado de Pines
+    </h4>
+    <div id="gpioBoard" class="gpio-grid"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const board = document.getElementById('gpioBoard');
+  const btnRefresh = document.getElementById('btnRefresh');
+  const alertBox = document.getElementById('alertBox');
+
+  // --- Utilidad de mensajes ---
+  function showAlert(msg, type = 'info', timeout = 4000) {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = msg;
+    alertBox.classList.remove('d-none');
+    clearTimeout(alertBox._hideTimeout);
+    alertBox._hideTimeout = setTimeout(() => {
+      alertBox.classList.add('d-none');
+    }, timeout);
+  }
+
+  // --- Carga inicial de pines ---
+  async function loadGPIO() {
+    try {
+      const res = await fetch('/api/gpio/status', { credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
+      board.innerHTML = '';
+
+      if (!data.pins || !Array.isArray(data.pins)) {
+        board.innerHTML = '<div class="text-muted text-center mt-3">⚠️ No se pudieron leer los pines.</div>';
+        return;
+      }
+
+      data.pins.forEach(pin => {
+        const el = document.createElement('div');
+        el.className = `gpio-pin card text-center p-2 ${pin.value ? 'on' : 'off'}`;
+        el.innerHTML = `
+          <div class="fw-bold text-light mb-1">GPIO${pin.id}</div>
+          <div class="led ${pin.value ? 'on' : 'off'} mx-auto mb-2"></div>
+          <div class="small text-muted">${pin.mode}</div>
+          <div class="state text-${pin.value ? 'success' : 'secondary'} fw-bold">${pin.value ? 'HIGH' : 'LOW'}</div>
+        `;
+        board.appendChild(el);
+      });
+    } catch (e) {
+      board.innerHTML = '<div class="text-danger text-center mt-3">❌ Error al consultar los pines.</div>';
+    }
+  }
+
+  btnRefresh.onclick = loadGPIO;
+  loadGPIO();
+
+  // --- Conexión Socket.IO ---
+  const socket = io();
+
+  socket.on('connect', () => {
+    showAlert('✅ Conectado al sistema GPIO.', 'success', 2500);
+  });
+
+  socket.on('disconnect', () => {
+    showAlert('⚠️ Desconectado del servidor GPIO.', 'warning', 4000);
+  });
+
+  socket.on('connect_error', () => {
+    showAlert('❌ Error de conexión con Socket.IO.', 'danger', 4000);
+  });
+
+  // --- Actualización en tiempo real ---
+  socket.on('gpio-update', data => {
+    const el = [...document.querySelectorAll('.gpio-pin')].find(b =>
+      b.innerText.includes(`GPIO${data.pin}`)
+    );
+    if (el) {
+      const led = el.querySelector('.led');
+      const state = el.querySelector('.state');
+      const isHigh = data.value === 1;
+
+      el.classList.toggle('on', isHigh);
+      el.classList.toggle('off', !isHigh);
+      led.classList.toggle('on', isHigh);
+      led.classList.toggle('off', !isHigh);
+      state.textContent = isHigh ? 'HIGH' : 'LOW';
+      state.className = `state fw-bold text-${isHigh ? 'success' : 'secondary'}`;
+
+      // animación de pulso
+      el.animate([{ transform: 'scale(1.15)' }, { transform: 'scale(1)' }], {
+        duration: 200,
+        easing: 'ease-out'
+      });
+    }
+  });
+});
+</script>
+
+<style>
+.gpio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+  justify-items: center;
+}
+
+.gpio-pin {
+  background: #1e1e1e;
+  border-radius: 12px;
+  width: 90px;
+  height: 110px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+.gpio-pin.on {
+  box-shadow: 0 0 12px rgba(0,255,0,0.4);
+}
+.gpio-pin.off {
+  opacity: 0.7;
+}
+
+.led {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #555;
+  box-shadow: 0 0 5px #000;
+  transition: all 0.3s ease;
+}
+.led.on {
+  background: #0f0;
+  box-shadow: 0 0 12px #0f0;
+}
+.led.off {
+  background: #555;
+  box-shadow: 0 0 5px #000;
+}
+</style>

@@ -1,0 +1,234 @@
+<!--
+  File: /views/sistema/impresion.ejs
+  Descripción: Centro de Impresión POS - Configuración, vista previa y edición por cola
+  Versión: 6.0 - Infratec Networks | Integrado con config/print.json
+-->
+
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0"><i class="ti ti-printer"></i> Centro de Impresión POS</h2>
+    <span id="printerBadge" class="badge bg-secondary px-3 py-2">
+      <i class="ti ti-loader"></i> Detectando impresora...
+    </span>
+  </div>
+
+  <div class="row g-4">
+    <!-- 🖧 Columna 1: Conexión -->
+    <div class="col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-4 h-100">
+        <h5 class="text-light mb-3"><i class="ti ti-settings"></i> Conexión</h5>
+
+        <div class="mb-3">
+          <label class="form-label text-light small">Tipo de conexión</label>
+          <select id="printerMode" class="form-select bg-black text-light border-secondary">
+            <option value="usb">USB Local</option>
+            <option value="network">Red (TCP/IP)</option>
+          </select>
+        </div>
+
+        <div id="ipContainer" class="mb-3 d-none">
+          <label class="form-label text-light small">Dirección IP</label>
+          <input id="printerIP" type="text" class="form-control bg-black text-light border-secondary" placeholder="Ej: 192.168.1.50">
+        </div>
+
+        <button id="btnTestPrint" class="btn btn-success w-100 mt-3" disabled>
+          <i class="ti ti-printer"></i> Imprimir Ticket de Prueba
+        </button>
+
+        <button id="btnPingTest" class="btn btn-outline-info w-100 mt-2 d-none">
+          <i class="ti ti-wifi"></i> Test de conexión
+        </button>
+      </div>
+    </div>
+
+    <!-- 🧾 Columna 2: Vista previa -->
+    <div class="col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-4 h-100 text-center">
+        <h5 class="text-light mb-3"><i class="ti ti-ticket"></i> Vista previa del ticket</h5>
+        <div class="ticket-preview mx-auto p-4 shadow">
+          <div class="text-center mb-2">
+            <strong id="previewStore" class="fs-4 text-dark">Supermercado XX</strong><br>
+            <small id="previewSector" class="text-muted">Sector Carnicería</small>
+          </div>
+
+          <div class="ticket-divider"></div>
+
+          <div class="text-center my-3">
+            <div class="fw-bold text-secondary fs-5">TURNO</div>
+            <div id="ticketNumber" class="fw-bold text-dark" style="font-size:4rem;line-height:1;">A001</div>
+            <div id="ticketTime" class="text-muted mt-2">--:--</div>
+          </div>
+
+          <div class="ticket-divider"></div>
+          <div class="text-center mt-2 small text-dark" id="previewMessage">
+            ¡Gracias por su visita!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⚙️ Columna 3: Configuración del ticket -->
+    <div class="col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-4 h-100">
+        <h5 class="text-light mb-3"><i class="ti ti-edit"></i> Configuración del ticket</h5>
+
+        <div class="mb-3">
+          <label class="form-label text-light small">Comercio / Empresa</label>
+          <input id="inputStore" type="text" class="form-control bg-black text-light border-secondary" placeholder="Ej: Supermercado XX">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-light small">Sector / Cola</label>
+          <input id="inputSector" type="text" class="form-control bg-black text-light border-secondary" placeholder="Ej: Carnicería">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-light small">Mensaje final</label>
+          <textarea id="inputMessage" rows="2" class="form-control bg-black text-light border-secondary" placeholder="Ej: ¡Gracias por su visita!"></textarea>
+        </div>
+
+        <button id="btnSaveConfig" class="btn btn-primary w-100 mt-3">
+          <i class="ti ti-device-floppy"></i> Guardar Configuración
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.ticket-preview {
+  background: #fff;
+  color: #000;
+  width: 320px;
+  font-family: 'Courier New', monospace;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+.ticket-divider {
+  border-top: 1px dashed #888;
+  margin: 10px 0;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const badge = document.getElementById("printerBadge");
+  const btnTest = document.getElementById("btnTestPrint");
+  const btnPing = document.getElementById("btnPingTest");
+  const modeSelect = document.getElementById("printerMode");
+  const ipContainer = document.getElementById("ipContainer");
+  const ipInput = document.getElementById("printerIP");
+
+  const storeInput = document.getElementById("inputStore");
+  const sectorInput = document.getElementById("inputSector");
+  const msgInput = document.getElementById("inputMessage");
+  const saveBtn = document.getElementById("btnSaveConfig");
+
+  const previewStore = document.getElementById("previewStore");
+  const previewSector = document.getElementById("previewSector");
+  const previewMsg = document.getElementById("previewMessage");
+  const ticketNumber = document.getElementById("ticketNumber");
+  const ticketTime = document.getElementById("ticketTime");
+
+  let activeQueueId = null;
+
+  // 🟢 Obtener cola activa
+  async function getActiveQueue() {
+    try {
+      const res = await fetch("/api/get-active-queue", { credentials: "include" });
+      const data = await res.json();
+      if (data?.queue?.id) {
+        activeQueueId = data.queue.id;
+        await loadConfig();
+      }
+    } catch {
+      console.warn("⚠️ No se pudo obtener cola activa.");
+    }
+  }
+
+  // 📡 Estado impresora
+  async function checkPrinter() {
+    try {
+      const res = await fetch("/api/print/status", { credentials: "include" });
+      const data = await res.json();
+      if (data.connected) {
+        badge.className = "badge bg-success px-3 py-2";
+        badge.innerHTML = `<i class='ti ti-printer'></i> ${data.message}`;
+        btnTest.disabled = false;
+      } else {
+        badge.className = "badge bg-danger px-3 py-2";
+        badge.innerHTML = "<i class='ti ti-printer-off'></i> Desconectada";
+        btnTest.disabled = true;
+      }
+    } catch {
+      badge.className = "badge bg-danger px-3 py-2";
+      badge.innerHTML = "<i class='ti ti-printer-off'></i> Error de conexión";
+    }
+  }
+
+  // 💾 Cargar configuración por cola
+  async function loadConfig() {
+    if (!activeQueueId) return;
+    const res = await fetch(`/api/print/config/${activeQueueId}`, { credentials: "include" });
+    const data = await res.json();
+    storeInput.value = data.store || "";
+    sectorInput.value = data.sector || "";
+    msgInput.value = data.message || "";
+    updatePreview();
+  }
+
+  // 💾 Guardar configuración
+  saveBtn.addEventListener("click", async () => {
+    if (!activeQueueId) return alert("No hay cola activa.");
+    const body = {
+      store: storeInput.value.trim(),
+      sector: sectorInput.value.trim(),
+      message: msgInput.value.trim()
+    };
+    const res = await fetch(`/api/print/config/${activeQueueId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body)
+    });
+    if (res.ok) alert("✅ Configuración guardada correctamente.");
+    else alert("❌ Error al guardar la configuración.");
+    updatePreview();
+  });
+
+  // 🧾 Vista previa
+  function updatePreview() {
+    previewStore.textContent = storeInput.value || "Supermercado XX";
+    previewSector.textContent = sectorInput.value || "Sector General";
+    previewMsg.textContent = msgInput.value || "¡Gracias por su visita!";
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    ticketNumber.textContent = "A" + Math.floor(Math.random() * 900 + 100);
+    ticketTime.textContent = `${hh}:${mm}`;
+  }
+
+  // 🔄 Eventos
+  [storeInput, sectorInput, msgInput].forEach(i => i.addEventListener("input", updatePreview));
+  modeSelect.addEventListener("change", () => {
+    const mode = modeSelect.value;
+    ipContainer.classList.toggle("d-none", mode !== "network");
+    btnPing.classList.toggle("d-none", mode !== "network");
+  });
+
+  btnTest.addEventListener("click", async () => {
+    await fetch("/api/print/test", { method: "POST", credentials: "include" });
+    updatePreview();
+  });
+
+  btnPing.addEventListener("click", async () => {
+    await fetch("/api/print/status", { credentials: "include" }).then(r => r.json()).then(data => {
+      alert(data.connected ? "✅ Conectada correctamente" : "❌ No responde la impresora");
+    });
+  });
+
+  getActiveQueue();
+  checkPrinter();
+  setInterval(checkPrinter, 5000);
+});
+</script>
