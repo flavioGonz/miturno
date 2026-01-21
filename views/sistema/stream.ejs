@@ -1,0 +1,328 @@
+<div class="container-fluid py-4 animate-in fade-in duration-500">
+
+    <!-- HEADER -->
+    <div class="row mb-5 align-items-end">
+        <div class="col">
+            <h2 class="m-0 text-white fw-bold d-flex align-items-center gap-3">
+                <div class="icon-square-lg bg-orange-lt text-orange rounded-3 d-flex align-items-center justify-content-center"
+                    style="width: 48px; height: 48px;">
+                    <i class="ti ti-cast fs-2"></i>
+                </div>
+                <span>Stream <span class="text-orange">Manager</span></span>
+            </h2>
+        </div>
+        <div class="col-auto">
+            <button id="btnScan" class="btn btn-dark border-secondary text-white fw-bold shadow-lg">
+                <i class="ti ti-radar me-2 text-orange"></i> ESCANEAR RED
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT: DEVICE LIST -->
+        <div class="col-lg-5">
+            <div class="tech-card h-100 d-flex flex-column" style="min-height: 500px;">
+                <div class="card-header border-bottom border-white-5 p-4 bg-black-20">
+                    <h4 class="m-0 text-white fw-bold small text-uppercase d-flex align-items-center gap-2">
+                        <i class="ti ti-devices text-secondary"></i> Dispositivos Encontrados
+                    </h4>
+                </div>
+                <div class="card-body p-0 flex-grow-1 overflow-auto custom-scroll" id="deviceList">
+                    <div class="p-5 text-center text-muted opacity-50">
+                        <i class="ti ti-radar fs-1 mb-3 d-block"></i>
+                        Presiona Escanear para buscar Chromecasts
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: ACTION PANEL -->
+        <div class="col-lg-7">
+            <div id="actionPanel"
+                class="tech-card h-100 d-none flex-column align-items-center justify-content-center p-5 text-center position-relative">
+
+                <div class="position-absolute top-0 start-0 p-4 w-100 text-start">
+                    <div class="text-secondary small fw-bold text-uppercase">Seleccionado:</div>
+                    <h3 class="text-white fw-bold display-6" id="selectedDeviceName">--</h3>
+                    <div class="text-muted mono small" id="selectedDeviceIp">--</div>
+                </div>
+
+                <div class="z-2 mt-5">
+                    <div class="icon-circle mb-4 bg-orange-lt border border-orange text-orange mx-auto pulse-orange"
+                        style="width:100px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:50%;">
+                        <i class="ti ti-cast fs-1"></i>
+                    </div>
+
+                    <h4 class="text-white mb-4">¿Qué deseas transmitir?</h4>
+
+                    <div class="d-grid gap-3" style="max-width: 420px; margin: 0 auto;">
+                        <button
+                            class="btn btn-dark border-white-10 py-3 text-start px-4 d-flex align-items-center gap-3 hover-scale"
+                            onclick="castContent('/monitor')">
+                            <i class="ti ti-device-tv fs-2 text-azure"></i>
+                            <div>
+                                <div class="fw-bold text-white">Monitor de Turnos</div>
+                                <div class="small text-secondary">Visualización pública de la cola</div>
+                            </div>
+                        </button>
+
+                        <button
+                            class="btn btn-dark border-white-10 py-3 text-start px-4 d-flex align-items-center gap-3 hover-scale"
+                            onclick="castContent('/media/panaderia.jpg')">
+                            <i class="ti ti-photo fs-2 text-pink"></i>
+                            <div>
+                                <div class="fw-bold text-white">Imagen Background</div>
+                                <div class="small text-secondary">Foto de alta definición</div>
+                            </div>
+                        </button>
+
+                        <button
+                            class="btn btn-dark border-white-10 py-3 text-start px-4 d-flex align-items-center gap-3 hover-scale"
+                            onclick="castContent('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')">
+                            <i class="ti ti-movie fs-2 text-green"></i>
+                            <div>
+                                <div class="fw-bold text-white">Video de Prueba</div>
+                                <div class="small text-secondary">Prueba de buffering y audio</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- EMPTY STATE RIGHT -->
+            <div id="emptyStateRight"
+                class="tech-card h-100 d-flex flex-column align-items-center justify-content-center text-center p-5">
+                <div class="mb-4 opacity-20">
+                    <i class="ti ti-cast" style="font-size: 80px;"></i>
+                </div>
+                <h3 class="text-white fw-bold mb-2">Streaming Center</h3>
+                <p class="text-secondary opacity-60">Selecciona un dispositivo de la lista <br> para comenzar la
+                    transmisión automática.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STYLIZED MODAL: SENDING CONTENT -->
+<div class="modal fade" id="modalCasting" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 bg-dark shadow-2xl" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-body p-5 text-center bg-black-20">
+                <div class="spinner-border text-orange mb-4" style="width: 3rem; height: 3rem; border-width: .25em;"
+                    role="status"></div>
+                <h4 class="text-white fw-bold mb-2">Enviando contenido...</h4>
+                <p class="text-secondary small mb-0" id="castingStatus">Conectando con el dispositivo</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STYLIZED MODAL: SUCCESS -->
+<div class="modal fade" id="modalCastingSuccess" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 bg-dark shadow-2xl" style="border-radius: 20px;">
+            <div class="modal-body p-5 text-center">
+                <div class="icon-square bg-success-lt text-success mx-auto mb-4 p-3 rounded-circle"
+                    style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                    <i class="ti ti-check fs-1"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-2">¡Éxito!</h4>
+                <p class="text-secondary small mb-4">La transmisión ha comenzado correctamente.</p>
+                <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">Entendido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tech-card {
+        background: #121417;
+        border: 1px solid #2a2e33;
+        border-radius: 12px;
+    }
+
+    .bg-orange-lt {
+        background: rgba(253, 126, 20, 0.1);
+    }
+
+    .text-orange {
+        color: #fd7e14 !important;
+    }
+
+    .border-orange {
+        border-color: #fd7e14 !important;
+    }
+
+    .bg-black-20 {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .border-white-5 {
+        border-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .border-white-10 {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .hover-scale {
+        transition: transform 0.2s;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.02);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .device-item {
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .device-item:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .device-item.active {
+        background: rgba(253, 126, 20, 0.1);
+        border-left: 4px solid #fd7e14;
+    }
+
+    @keyframes pulse-orange {
+        0% {
+            box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.4);
+        }
+
+        70% {
+            box-shadow: 0 0 0 20px rgba(253, 126, 20, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(253, 126, 20, 0);
+        }
+    }
+
+    .pulse-orange {
+        animation: pulse-orange 2s infinite;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let devices = [];
+        let selectedDevice = null;
+        const btnScan = document.getElementById('btnScan');
+        const list = document.getElementById('deviceList');
+        const panel = document.getElementById('actionPanel');
+        const empty = document.getElementById('emptyStateRight');
+        const dName = document.getElementById('selectedDeviceName');
+        const dIp = document.getElementById('selectedDeviceIp');
+
+        // Modal instances
+        const modalCasting = new bootstrap.Modal(document.getElementById('modalCasting'));
+        const modalSuccess = new bootstrap.Modal(document.getElementById('modalCastingSuccess'));
+
+        btnScan.onclick = async () => {
+            btnScan.innerHTML = '<i class="ti ti-loader rotate"></i> Buscando...';
+            try {
+                const res = await fetch('/api/chromecast/scan');
+                const data = await res.json();
+                devices = data.devices || [];
+                renderList();
+                btnScan.innerHTML = '<i class="ti ti-radar me-2 text-orange"></i> ESCANEAR RED';
+            } catch (e) {
+                btnScan.innerHTML = 'Error';
+                console.error(e);
+            }
+        };
+
+        function renderList() {
+            list.innerHTML = '';
+            if (devices.length === 0) {
+                list.innerHTML = `<div class="p-5 text-center text-muted">No se encontraron dispositivos Chromecast.</div>`;
+                return;
+            }
+            devices.forEach(d => {
+                const el = document.createElement('div');
+                el.className = `device-item d-flex align-items-center gap-3 ${selectedDevice?.id === d.id ? 'active' : ''}`;
+                el.innerHTML = `
+                <i class="ti ti-cast fs-2 text-secondary"></i>
+                <div>
+                    <div class="fw-bold text-white">${d.name}</div>
+                    <div class="small text-secondary mono">${d.address}</div>
+                </div>
+            `;
+                el.onclick = () => selectDevice(d);
+                list.appendChild(el);
+            });
+        }
+
+        function selectDevice(d) {
+            selectedDevice = d;
+            dName.textContent = d.name;
+            dIp.textContent = d.address;
+            renderList();
+            empty.classList.add('d-none');
+            panel.classList.remove('d-none');
+        }
+
+        window.castContent = async (contentUrl) => {
+            if (!selectedDevice) return;
+
+            let finalUrl = contentUrl;
+            if (contentUrl.startsWith('/')) {
+                // Importante: El Chromecast debe poder alcanzar esta URL.
+                // Usamos la IP/Host del navegador si es accesible, o la IP local del servidor.
+                const host = window.location.hostname;
+                const port = window.location.port || '3000';
+                finalUrl = `http://${host}:${port}${contentUrl}`;
+            }
+
+            modalCasting.show();
+            document.getElementById('castingStatus').textContent = 'Conectando con ' + selectedDevice.name;
+
+            try {
+                const apiUrl = '/api/chromecast/cast';
+
+                console.log('API URL:', apiUrl);
+
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ip: selectedDevice.address,
+                        url: finalUrl
+                    })
+                });
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch (parseError) {
+                    console.error('Error parsing JSON:', parseError);
+                    data = { success: false, error: 'Respuesta inválida del servidor' };
+                }
+
+                setTimeout(() => {
+                    modalCasting.hide();
+                    if (res.ok && data.success) {
+                        modalSuccess.show();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo iniciar la transmisión. Código: ' + res.status));
+                    }
+                }, 1000);
+
+            } catch (e) {
+                modalCasting.hide();
+                alert('Error de conexión con el servidor: ' + e.message);
+                console.error('Fetch error:', e);
+            }
+        };
+
+        // Auto scan on load
+        btnScan.click();
+    });
+</script>

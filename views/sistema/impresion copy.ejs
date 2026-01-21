@@ -1,0 +1,230 @@
+<!--
+  File: /views/sistema/impresion.ejs
+  Descripción: Panel moderno de impresión POS (USB / Red + Diagnóstico)
+  Versión: 5.2 – Infratec Networks
+-->
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0">
+      <i class="ti ti-printer"></i> Centro de Impresión POS
+    </h2>
+    <span id="printerBadge" class="badge bg-secondary px-3 py-2">
+      <i class="ti ti-loader"></i> Detectando impresora...
+    </span>
+  </div>
+
+  <div class="row g-4">
+    <!-- Configuración -->
+    <div class="col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-4 h-100">
+        <h5 class="text-light mb-3"><i class="ti ti-settings"></i> Configuración</h5>
+
+        <div class="mb-3">
+          <label class="text-light small mb-1">Tipo de conexión:</label>
+          <select id="printerMode" class="form-select bg-black text-light border-secondary">
+            <option value="usb">USB Local</option>
+            <option value="network">Red (TCP/IP)</option>
+          </select>
+        </div>
+
+        <div class="mb-3 d-none" id="ipContainer">
+          <label class="text-light small mb-1">Dirección IP:</label>
+          <input id="printerIP" type="text"
+            class="form-control bg-black text-light border-secondary"
+            placeholder="Ej: 192.168.1.50">
+        </div>
+
+        <button id="btnTestPrint" class="btn btn-success w-100 mt-3" disabled>
+          <i class="ti ti-printer"></i> Imprimir Ticket de Prueba
+        </button>
+
+        <button id="btnPingTest" class="btn btn-outline-info w-100 mt-2 d-none">
+          <i class="ti ti-wifi"></i> Test conexión de red
+        </button>
+      </div>
+    </div>
+
+    <!-- Vista previa -->
+    <div class="col-lg-8">
+      <div class="card bg-dark border-0 shadow-sm p-4 h-100">
+        <h5 class="text-light mb-3"><i class="ti ti-ticket"></i> Vista previa del ticket</h5>
+        <div class="ticket-preview mx-auto p-4 shadow">
+          <div class="text-center mb-2">
+            <strong class="fs-4 text-dark">TURNITO ADMIN</strong><br>
+            <small>Sistema de Turnos</small>
+          </div>
+
+          <div class="ticket-divider"></div>
+
+          <div id="ticketBody" class="text-center my-3">
+            <div class="fw-bold text-secondary fs-5">TURNO</div>
+            <div id="ticketNumber" class="fw-bold text-dark" style="font-size:4rem;line-height:1;">A001</div>
+            <div id="ticketTime" class="text-muted mt-2">--:--</div>
+          </div>
+
+          <div class="ticket-divider"></div>
+          <div class="text-center mt-2 small text-dark">
+            <i class="ti ti-heart text-danger"></i> ¡Gracias por su visita!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="printModal" class="custom-modal d-none">
+  <div class="modal-content bg-dark text-light border border-success p-4 text-center">
+    <i id="modalIcon" class="ti ti-printer fs-1 text-success mb-3"></i>
+    <h5 id="modalText">Imprimiendo ticket...</h5>
+  </div>
+</div>
+
+<style>
+.ticket-preview {
+  background: #fff;
+  color: #000;
+  width: 320px;
+  font-family: 'Courier New', monospace;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+.ticket-divider {
+  border-top: 1px dashed #888;
+  margin: 10px 0;
+}
+.custom-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.custom-modal .modal-content {
+  width: 350px;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(0,255,0,0.3);
+  transition: all 0.4s ease;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const badge = document.getElementById("printerBadge");
+  const btn = document.getElementById("btnTestPrint");
+  const btnPing = document.getElementById("btnPingTest");
+  const modeSelect = document.getElementById("printerMode");
+  const ipContainer = document.getElementById("ipContainer");
+  const ipInput = document.getElementById("printerIP");
+  const ticketNumber = document.getElementById("ticketNumber");
+  const ticketTime = document.getElementById("ticketTime");
+  const modal = document.getElementById("printModal");
+  const modalText = document.getElementById("modalText");
+  const modalIcon = document.getElementById("modalIcon");
+
+  const showModal = (msg, success = true) => {
+    modal.classList.remove("d-none");
+    modalText.textContent = msg;
+    modalIcon.className = success
+      ? "ti ti-check fs-1 text-success mb-3"
+      : "ti ti-alert-triangle fs-1 text-danger mb-3";
+    setTimeout(() => modal.classList.add("d-none"), 2500);
+  };
+
+  const updateBadge = (connected, message) => {
+    if (connected) {
+      badge.className = "badge bg-success px-3 py-2";
+      badge.innerHTML = `<i class="ti ti-printer"></i> Conectada <span class="small">(${message})</span>`;
+    } else {
+      badge.className = "badge bg-danger px-3 py-2";
+      badge.innerHTML = `<i class="ti ti-printer-off"></i> Desconectada`;
+    }
+  };
+
+  async function checkPrinter() {
+    try {
+      const res = await fetch("/api/print/status", { credentials: "include" });
+      const data = await res.json();
+      updateBadge(data.connected, data.message || "");
+      btn.disabled = !data.connected;
+    } catch {
+      updateBadge(false, "Error de conexión");
+      btn.disabled = true;
+    }
+  }
+
+  // --- Guardar y restaurar modo ---
+  function saveMode() {
+    localStorage.setItem("printerMode", modeSelect.value);
+    localStorage.setItem("printerIP", ipInput.value);
+  }
+  function restoreMode() {
+    const savedMode = localStorage.getItem("printerMode") || "usb";
+    const savedIP = localStorage.getItem("printerIP") || "";
+    modeSelect.value = savedMode;
+    ipInput.value = savedIP;
+    ipContainer.classList.toggle("d-none", savedMode !== "network");
+    btnPing.classList.toggle("d-none", savedMode !== "network");
+  }
+
+  restoreMode();
+  checkPrinter();
+  setInterval(checkPrinter, 3000);
+
+  modeSelect.addEventListener("change", async () => {
+    const mode = modeSelect.value;
+    const ip = ipInput.value.trim();
+    ipContainer.classList.toggle("d-none", mode !== "network");
+    btnPing.classList.toggle("d-none", mode !== "network");
+    saveMode();
+
+    await fetch("/api/print/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ mode, ip })
+    });
+    checkPrinter();
+  });
+
+  function updatePreview() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    ticketNumber.textContent = "A" + Math.floor(Math.random() * 900 + 100);
+    ticketTime.textContent = `${hh}:${mm}`;
+  }
+
+  // --- Imprimir ---
+  btn.addEventListener("click", async () => {
+    showModal("Enviando ticket...");
+    const res = await fetch("/api/print/test", { method: "POST", credentials: "include" });
+    const data = await res.json();
+    if (data.success) showModal(data.message, true);
+    else showModal(data.error || "Error al imprimir", false);
+    updatePreview();
+    checkPrinter();
+  });
+
+  // --- Test conexión de red ---
+  btnPing.addEventListener("click", async () => {
+    const ip = ipInput.value.trim();
+    if (!ip) return showModal("Ingrese una IP válida", false);
+
+    showModal("Comprobando conexión...");
+    try {
+      const res = await fetch("/api/print/status", { credentials: "include" });
+      const data = await res.json();
+      if (data.connected) showModal("✅ La impresora responde en red", true);
+      else showModal("❌ No se detecta impresora en red", false);
+    } catch {
+      showModal("Error verificando conexión", false);
+    }
+  });
+
+  updatePreview();
+});
+</script>

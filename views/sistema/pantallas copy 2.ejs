@@ -1,0 +1,236 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/pantallas.ejs
+  Descripción: Configuración de monitores y asignación de colas
+  Versión: 6.4 - Integrado con API /api/monitors
+-->
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0">
+      <i class="ti ti-device-desktop"></i> Configuración de Pantallas
+    </h2>
+    <button id="btnNewMonitor" class="btn btn-outline-info">
+      <i class="ti ti-plus"></i> Nuevo Monitor
+    </button>
+  </div>
+
+  <div id="msgBox" class="alert d-none"></div>
+
+  <div class="row">
+    <!-- LISTADO -->
+    <div class="col-md-5 col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-3 mb-4">
+        <h4 class="text-light mb-3"><i class="ti ti-screen-share"></i> Monitores</h4>
+        <ul id="monitorList" class="list-group list-group-flush bg-dark"></ul>
+      </div>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="col-md-7 col-lg-8 position-relative">
+      <div id="configCard" class="card bg-dark border-0 shadow-sm p-3 d-none">
+        <h4 class="text-light mb-4">
+          <i class="ti ti-settings"></i> Configuración del Monitor
+          <span id="monitorName" class="text-info"></span>
+        </h4>
+
+        <div class="mb-3">
+          <label class="form-label text-light">Cola asignada</label>
+          <select id="queueSelect" class="form-select bg-dark text-light border-0"></select>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-light">Orientación</label>
+            <select id="orientation" class="form-select bg-dark text-light border-0">
+              <option value="horizontal">Horizontal</option>
+              <option value="vertical">Vertical</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label text-light">Fondo</label>
+            <input type="text" id="background" class="form-control bg-dark text-light border-0" placeholder="/media/panaderia.jpg">
+          </div>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="showWeather">
+          <label class="form-check-label text-light" for="showWeather">Mostrar clima</label>
+        </div>
+
+        <div class="form-check form-switch mb-4">
+          <input class="form-check-input" type="checkbox" id="showNews">
+          <label class="form-check-label text-light" for="showNews">Mostrar noticias</label>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <button id="btnSaveMonitor" class="btn btn-success">
+            <i class="ti ti-device-floppy"></i> Guardar cambios
+          </button>
+          <button id="btnDeleteMonitor" class="btn btn-outline-danger">
+            <i class="ti ti-trash"></i> Eliminar
+          </button>
+        </div>
+      </div>
+
+      <!-- PREVISUALIZACIÓN -->
+      <div class="card bg-black border-0 shadow-sm p-2 mb-3 position-relative overflow-hidden">
+        <iframe
+          id="previewFrame"
+          src="/monitor"
+          width="100%"
+          height="600"
+          style="border:none;border-radius:6px;background:#000;"
+        ></iframe>
+        <button
+          id="refreshPreview"
+          class="btn btn-outline-secondary position-absolute"
+          style="bottom:20px; right:20px; border-radius:50%; width:50px; height:50px; display:flex; justify-content:center; align-items:center;"
+          title="Recargar vista"
+        >
+          <i class="ti ti-refresh fs-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const monitorList = document.getElementById('monitorList');
+  const msgBox = document.getElementById('msgBox');
+  const configCard = document.getElementById('configCard');
+  const previewFrame = document.getElementById('previewFrame');
+  const refreshPreview = document.getElementById('refreshPreview');
+  const btnNewMonitor = document.getElementById('btnNewMonitor');
+  const btnSaveMonitor = document.getElementById('btnSaveMonitor');
+  const btnDeleteMonitor = document.getElementById('btnDeleteMonitor');
+  const monitorName = document.getElementById('monitorName');
+  const queueSelect = document.getElementById('queueSelect');
+  const orientation = document.getElementById('orientation');
+  const background = document.getElementById('background');
+  const showWeather = document.getElementById('showWeather');
+  const showNews = document.getElementById('showNews');
+
+  let currentMonitor = null;
+  let queues = [];
+
+  const showMsg = (msg, type = 'info') => {
+    msgBox.className = `alert alert-${type}`;
+    msgBox.textContent = msg;
+    msgBox.classList.remove('d-none');
+    setTimeout(() => msgBox.classList.add('d-none'), 3000);
+  };
+
+  const getJSON = async (url, opts = {}) => {
+    try {
+      const res = await fetch(url, { credentials: 'include', ...opts });
+      const txt = await res.text();
+      return JSON.parse(txt);
+    } catch {
+      return {};
+    }
+  };
+
+  async function loadQueues() {
+    queues = await getJSON('/api/queues');
+    queueSelect.innerHTML = '<option value="">(Sin asignar)</option>';
+    queues.forEach(q => {
+      const opt = document.createElement('option');
+      opt.value = q.id;
+      opt.textContent = q.name;
+      queueSelect.appendChild(opt);
+    });
+  }
+
+  async function loadMonitors() {
+    const data = await getJSON('/api/monitors');
+    monitorList.innerHTML = '';
+    if (!data.length) {
+      monitorList.innerHTML = '<li class="list-group-item bg-dark text-light border-0">Sin monitores registrados</li>';
+      return;
+    }
+    data.forEach(m => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item bg-dark text-light d-flex justify-content-between align-items-center border-0';
+      li.innerHTML = `
+        <span><i class="ti ti-device-desktop"></i> ${m.name} 
+        ${m.queue_name ? `<small class="text-muted">(${m.queue_name})</small>` : ''}</span>
+        <button class="btn btn-sm btn-outline-info" data-id="${m.id}">
+          <i class="ti ti-pencil"></i>
+        </button>
+      `;
+      li.querySelector('button').onclick = () => openMonitor(m.id);
+      monitorList.appendChild(li);
+    });
+  }
+
+  async function openMonitor(id) {
+    const m = await getJSON('/api/monitors/' + id);
+    if (!m.id) return showMsg('Monitor no encontrado', 'warning');
+    currentMonitor = m;
+    monitorName.textContent = m.name;
+    configCard.classList.remove('d-none');
+    queueSelect.value = m.queue_id || '';
+    orientation.value = m.orientation || 'horizontal';
+    background.value = m.background || '/media/panaderia.jpg';
+    showWeather.checked = !!m.show_weather;
+    showNews.checked = !!m.show_news;
+  }
+
+  btnNewMonitor.onclick = async () => {
+    const name = prompt('Nombre del nuevo monitor:');
+    if (!name) return;
+    const res = await fetch('/api/monitors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    showMsg(data.message || 'Monitor creado', 'success');
+    loadMonitors();
+  };
+
+  btnSaveMonitor.onclick = async () => {
+    if (!currentMonitor) return;
+    const payload = {
+      name: currentMonitor.name,
+      queue_id: queueSelect.value || null,
+      orientation: orientation.value,
+      background: background.value.trim(),
+      show_weather: showWeather.checked,
+      show_news: showNews.checked
+    };
+    const res = await fetch('/api/monitors/' + currentMonitor.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showMsg(data.message || 'Guardado', 'success');
+    loadMonitors();
+  };
+
+  btnDeleteMonitor.onclick = async () => {
+    if (!currentMonitor) return;
+    if (!confirm('¿Eliminar este monitor?')) return;
+    const res = await fetch('/api/monitors/' + currentMonitor.id, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    showMsg(data.message || 'Eliminado', 'danger');
+    configCard.classList.add('d-none');
+    loadMonitors();
+  };
+
+  refreshPreview.onclick = () => {
+    previewFrame.src = '/monitor?cache=' + Date.now();
+  };
+
+  loadQueues();
+  loadMonitors();
+});
+</script>
+
+<style>
+.text-info { color: #00bfff !important; }
+</style>

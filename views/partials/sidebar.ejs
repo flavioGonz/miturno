@@ -1,0 +1,481 @@
+<!-- 
+  File: /views/partials/sidebar.ejs 
+  Description: Redesigned Sidebar - Industrial/Dark Unified v5
+-->
+<nav class="sidebar-new">
+
+  <!-- 1. LOGO HEADER -->
+  <div class="sidebar-logo-area">
+    <img src="/img/logo.png" alt="Turnito" class="sidebar-logo">
+    <button class="btn-toggle-sidebar" onclick="toggleSidebar()">
+      <i class="ti ti-menu-2"></i>
+    </button>
+  </div>
+
+  <!-- 2. NAVIGATION SCROLLABLE -->
+  <div class="sidebar-body">
+
+    <!-- MAIN ITEM -->
+    <a href="/" class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Mapa')) ? 'active' : '' %>"
+      title="Mapa del Sistema">
+      <i class="ti ti-topology-star-ring-3"></i>
+      <span class="nav-text">Mapa del Sistema</span>
+    </a>
+
+    <!-- OPERACIONES GROUP -->
+    <div class="nav-group-header">OPERACIONES</div>
+
+    <a href="/sistema/publicidad"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Publicidad')) ? 'active' : '' %>"
+      title="Publicidad">
+      <i class="ti ti-photo-edit"></i>
+      <span class="nav-text">Publicidad</span>
+    </a>
+
+    <a href="/sistema/control"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Control')) ? 'active' : '' %>"
+      title="Control de Turnos">
+      <i class="ti ti-users"></i>
+      <span class="nav-text">Control de Turnos</span>
+    </a>
+
+    <a href="/sistema/stream"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Stream')) ? 'active' : '' %>"
+      title="Stream Chromecast">
+      <i class="ti ti-cast"></i>
+      <span class="nav-text">Stream Monitor</span>
+    </a>
+
+    <a href="/sistema/impresion"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Ticket')) ? 'active' : '' %>"
+      title="Diseño de Ticket">
+      <i class="ti ti-printer"></i>
+      <span class="nav-text">Diseño de Ticket</span>
+    </a>
+
+    <!-- CONFIGURACIÓN GROUP -->
+    <div class="nav-group-header">CONFIGURACIÓN</div>
+
+    <a href="/sistema/servicios"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Servicios')) ? 'active' : '' %>"
+      title="Servicios">
+      <i class="ti ti-cpu"></i>
+      <span class="nav-text">Servicios</span>
+    </a>
+
+    <a href="/sistema/gpio"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('GPIO')) ? 'active' : '' %>"
+      title="Pines (GPIO)">
+      <i class="ti ti-plug-connected"></i>
+      <span class="nav-text">Pines (GPIO)</span>
+    </a>
+
+    <a href="/sistema/fullpageos"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('FullPageOS')) ? 'active' : '' %>"
+      title="FullPageOS">
+      <i class="ti ti-settings-automation"></i>
+      <span class="nav-text">FullPageOS</span>
+    </a>
+
+    <a href="/sistema/logs"
+      class="nav-item-new <%= (typeof title != 'undefined' && title.includes('Logs')) ? 'active' : '' %>" title="Logs">
+      <i class="ti ti-terminal-2"></i>
+      <span class="nav-text">Logs</span>
+    </a>
+
+  </div>
+
+  <!-- 3. FOOTER INFO & CONTROLS -->
+  <div class="sidebar-footer-new">
+
+    <!-- Host Info -->
+    <div class="footer-row host-info">
+      <i class="ti ti-server"></i>
+      <span>Host:</span>
+      <strong id="badgeHost" class="ms-auto text-azure">...</strong>
+    </div>
+
+    <!-- Date/Time Badge (Small) -->
+    <div class="footer-row-badge" id="badgeHora">--/--/--</div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <span class="metric-label">TEMP</span>
+        <span class="metric-val" id="badgeTemp">--</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">CPU</span>
+        <span class="metric-val text-warning" id="badgeCpu">--</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">RAM</span>
+        <span class="metric-val text-success" id="badgeRam">--</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons Row -->
+    <div class="actions-grid">
+      <button class="action-btn btn-rfr" onclick="openConfirmModal('reboot')" title="Reiniciar"><i
+          class="ti ti-refresh"></i></button>
+      <button class="action-btn btn-pwr" onclick="openConfirmModal('shutdown')" title="Apagar"><i
+          class="ti ti-power"></i></button>
+      <button class="action-btn btn-upd" onclick="openConfirmModal('update')" title="Actualizar"><i
+          class="ti ti-arrow-up"></i></button>
+      <button class="action-btn btn-net" data-bs-toggle="modal" data-bs-target="#modalRed" title="Red"><i
+          class="ti ti-wifi"></i></button>
+      <button class="action-btn btn-tv" data-bs-toggle="modal" data-bs-target="#modalHdmi" onclick="actualizarHdmi()"
+        title="HDMI"><i class="ti ti-device-tv"></i></button>
+    </div>
+
+    <div class="separator-line"></div>
+
+    <!-- User Profile -->
+    <div class="user-profile dropdown">
+      <a href="#" class="profile-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="ti ti-user-circle"></i>
+        <span>
+          <%= typeof username !='undefined' ? username : 'Admin' %>
+        </span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-dark">
+        <li><a class="dropdown-item" href="/logout"><i class="ti ti-logout me-2"></i> Cerrar Sesión</a></li>
+      </ul>
+    </div>
+
+  </div>
+</nav>
+
+<style>
+  :root {
+    --sb-bg: #050507;
+    --sb-border: #1a1e22;
+    --sb-text: #94a3b8;
+    --sb-text-hover: #ffffff;
+    --sb-active-bg: rgba(32, 107, 196, 0.1);
+    --sb-active-text: #206bc4;
+    --azure: #206bc4;
+  }
+
+  /* 1. CONTAINER */
+  .sidebar-new {
+    width: 250px;
+    height: 100vh;
+    background: var(--sb-bg);
+    /* border-right: 1px solid var(--sb-border); */
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    user-select: none;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  /* 2. LOGO */
+  .sidebar-logo-area {
+    padding: 25px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* border-bottom: 1px solid var(--sb-border); Remove border for cleaner look? */
+  }
+
+  .sidebar-logo {
+    max-width: 140px;
+    height: auto;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+  }
+
+  /* 3. SCROLL AREA */
+  .sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .sidebar-body::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-body::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
+
+  /* NAV ITEMS */
+  .nav-group-header {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: #4b5563;
+    letter-spacing: 1px;
+    font-weight: 700;
+    margin: 20px 0 8px 10px;
+  }
+
+  .nav-item-new {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    text-decoration: none;
+    color: var(--sb-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .nav-item-new i {
+    font-size: 1.25rem;
+    stroke-width: 1.5;
+  }
+
+  .nav-item-new:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--sb-text-hover);
+    transform: translateX(4px);
+  }
+
+  .nav-item-new.active {
+    background: var(--sb-active-bg);
+    color: var(--sb-active-text);
+    /* border-left: 3px solid var(--sb-active-text);  Removed border left, used full background */
+  }
+
+  /* 4. FOOTER */
+  .sidebar-footer-new {
+    background: #080a0c;
+    border-top: 1px solid var(--sb-border);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  .footer-row-badge {
+    background: #121418;
+    border: 1px solid #222;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    padding: 6px;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+  }
+
+  /* METRICS */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+  }
+
+  .metric-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* background: #0f1115; */
+    padding: 4px;
+    border-radius: 4px;
+  }
+
+  .metric-label {
+    font-size: 0.6rem;
+    color: #555;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .metric-val {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  /* ACTION BUTTONS */
+  .actions-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+  }
+
+  .action-btn {
+    flex: 1;
+    height: 36px;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #777;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    cursor: pointer;
+  }
+
+  .action-btn:hover {
+    background: #222;
+    color: #fff;
+    border-color: #555;
+  }
+
+  .btn-rfr:hover {
+    color: #f59f00;
+    border-color: #f59f00;
+  }
+
+  .btn-pwr:hover {
+    color: #e53e3e;
+    border-color: #e53e3e;
+  }
+
+  .btn-upd:hover {
+    color: #206bc4;
+    border-color: #206bc4;
+  }
+
+  .btn-net:hover {
+    color: #0ca678;
+    border-color: #0ca678;
+  }
+
+  .btn-tv:hover {
+    color: #17a2b8;
+    border-color: #17a2b8;
+  }
+
+  /* USER PROFILE */
+  .separator-line {
+    height: 1px;
+    background: #1a1e22;
+    width: 100%;
+  }
+
+  .profile-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    padding: 5px 0;
+  }
+
+  .profile-link:hover {
+    color: #fff;
+  }
+
+  .profile-link i {
+    font-size: 1.4rem;
+  }
+
+  /* TOGGLE BUTTON */
+  .btn-toggle-sidebar {
+    background: none;
+    border: none;
+    color: #666;
+    position: absolute;
+    right: 10px;
+    top: 25px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .btn-toggle-sidebar:hover {
+    color: #fff;
+  }
+
+  /* COLLAPSED LOGIC (Body Class) */
+  body.sidebar-collapsed .nav-text,
+  body.sidebar-collapsed .sidebar-logo,
+  body.sidebar-collapsed .nav-group-header,
+  body.sidebar-collapsed .host-info span,
+  body.sidebar-collapsed .host-info strong,
+  body.sidebar-collapsed .footer-row-badge,
+  body.sidebar-collapsed .metrics-grid,
+  body.sidebar-collapsed .profile-link span {
+    display: none !important;
+  }
+
+  body.sidebar-collapsed .sidebar-new {
+    width: 80px;
+  }
+
+  body.sidebar-collapsed .sidebar-logo-area {
+    justify-content: center;
+    padding: 20px 0;
+  }
+
+  body.sidebar-collapsed .sidebar-logo-area::after {
+    content: 'T';
+    font-weight: 900;
+    color: #fff;
+    font-size: 1.5rem;
+    display: block;
+    margin-right: 20px;
+    /* Space for toggle btn */
+  }
+
+  body.sidebar-collapsed .btn-toggle-sidebar {
+    right: 50%;
+    transform: translateX(50%);
+    top: 60px;
+  }
+
+  body.sidebar-collapsed .nav-item-new {
+    justify-content: center;
+    padding: 15px 0;
+  }
+
+  body.sidebar-collapsed .nav-item-new i {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  body.sidebar-collapsed .actions-grid {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body.sidebar-collapsed .sidebar-footer-new {
+    padding: 10px 5px;
+  }
+
+  body.sidebar-collapsed .profile-link {
+    justify-content: center;
+  }
+
+  body.sidebar-collapsed .profile-link i {
+    margin: 0;
+  }
+</style>
+
+<script>
+  // Ensure metrics start updating if header.ejs script didn't catch them or we need consistent IDs
+  // Note: The script in header.ejs targets IDs like badgeTemp, badgeCpu, etc.
+  // We reused the same IDs in this sidebar layout to maintain compatibility.
+
+  // Initialize Tooltips if bootstrap is available
+  document.addEventListener("DOMContentLoaded", () => {
+    if (typeof bootstrap !== 'undefined') {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('.action-btn'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    }
+  });
+</script>

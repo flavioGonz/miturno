@@ -1,0 +1,517 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/control.ejs
+  Descripción: Panel de Control de Turnos - Rediseño visual moderno (v6.2)
+  Autor: Flavio González - Infratec Networks
+-->
+
+<div class="turnito-dashboard container-fluid py-4">
+  <!-- 🧭 HEADER -->
+  <div class="header d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-cyan m-0 fw-bold">
+      <i class="ti ti-users"></i> Panel de Control de Turnos
+    </h2>
+
+    <div class="d-flex align-items-center gap-3">
+      <div id="activeQueueBanner" class="active-queue-banner d-none">
+        <i class="ti ti-bolt text-cyan me-2"></i>
+        <span>Cola activa: <strong id="activeQueueName">-</strong></span>
+      </div>
+      <button id="btnNewQueue" class="btn btn-glass">
+        <i class="ti ti-plus"></i> Nueva Cola
+      </button>
+    </div>
+  </div>
+
+  <div id="alertBox" class="alert d-none mt-3"></div>
+
+  <div class="row g-4">
+    <!-- 📋 COLAS -->
+    <div class="col-lg-4 col-md-6">
+      <div class="card dashboard-card shadow-lg p-3 border-0 h-100">
+        <h4 class="text-light mb-3"><i class="ti ti-list"></i> Colas Activas</h4>
+        <div id="queueList" class="queue-list text-light">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- 🎛️ PANEL CONTROL -->
+    <div class="col-lg-8 col-md-6">
+      <div id="turnPanel" class="card dashboard-card border-0 shadow-lg p-4 d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="text-light m-0">
+            <i class="ti ti-bell"></i> Turnos - <span id="queueTitle"></span>
+          </h4>
+          <button id="btnBack" class="btn btn-outline-light btn-sm">
+            <i class="ti ti-arrow-left"></i> Volver
+          </button>
+        </div>
+
+        <div class="turn-info text-center my-4">
+          <div class="text-muted small mb-2">Turno actual</div>
+          <div id="currentTurnNumber" class="display-turn fw-bold text-cyan glow-text">--</div>
+          <div id="currentTurnStatus" class="text-secondary fs-5 mt-2">Esperando llamada</div>
+        </div>
+
+        <div class="actions d-flex justify-content-center flex-wrap gap-3 mb-4">
+          <button id="btnNext" class="btn-action green"><i class="ti ti-player-skip-forward me-2"></i>Llamar</button>
+          <button id="btnComplete" class="btn-action blue"><i class="ti ti-check me-2"></i>Completar</button>
+          <button id="btnSkip" class="btn-action yellow"><i class="ti ti-skip-forward me-2"></i>Saltar</button>
+          <button id="btnAddTurn" class="btn-action outline"><i class="ti ti-plus me-2"></i>Agregar</button>
+        </div>
+
+        <h5 class="text-light mb-3"><i class="ti ti-history"></i> Últimos Turnos</h5>
+        <div id="turnList" class="turn-history"></div>
+      </div>
+    </div>
+  </div>
+
+<!-- 🧱 MODAL CREAR / EDITAR COLA -->
+<div class="modal fade" id="queueModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content bg-panel border-0">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-cyan fw-bold"><i class="ti ti-list"></i> <span id="queueModalTitle">Nueva Cola</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="queueNameInput" class="form-control bg-dark text-light border-secondary" placeholder="Nombre de la cola">
+        <input type="hidden" id="queueIdInput">
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="saveQueueBtn" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const queueList = document.getElementById("queueList");
+  const alertBox = document.getElementById("alertBox");
+  const btnNewQueue = document.getElementById("btnNewQueue");
+  const turnPanel = document.getElementById("turnPanel");
+  const queueTitle = document.getElementById("queueTitle");
+  const btnBack = document.getElementById("btnBack");
+  const btnNext = document.getElementById("btnNext");
+  const btnComplete = document.getElementById("btnComplete");
+  const btnSkip = document.getElementById("btnSkip");
+  const btnAddTurn = document.getElementById("btnAddTurn");
+  const turnList = document.getElementById("turnList");
+  const currentTurnNumber = document.getElementById("currentTurnNumber");
+  const currentTurnStatus = document.getElementById("currentTurnStatus");
+  let currentQueue = null;
+  let currentTurn = null;
+
+  const socket = io();
+
+  socket.on("turn-update", data => {
+    if (currentQueue && data.queue_id === currentQueue.id) loadTurns();
+  });
+
+  const showMsg = (msg, type = "info") => {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = msg;
+    alertBox.classList.remove("d-none");
+    clearTimeout(alertBox._hide);
+    alertBox._hide = setTimeout(() => alertBox.classList.add("d-none"), 2500);
+  };
+
+  const getJSON = async (url, opts = {}) => {
+    const res = await fetch(url, { credentials: "include", ...opts });
+    const txt = await res.text();
+    try { return JSON.parse(txt); } catch { return {}; }
+  };
+
+  async function loadQueues() {
+    const data = await getJSON("/api/queues");
+    queueList.innerHTML = "";
+    if (!data.length) {
+      queueList.innerHTML = '<div class="text-muted text-center">No hay colas registradas.</div>';
+      return;
+    }
+
+    data.forEach(q => {
+      const card = document.createElement("div");
+      card.className = "queue-card card bg-panel border border-cyan p-3 mb-3 shadow-sm text-center";
+      card.innerHTML = `
+        <h5 class="text-light fw-bold mb-3"><i class="ti ti-stack"></i> ${q.name}</h5>
+        <div class="d-flex justify-content-center gap-2">
+          <button class="btn btn-sm btn-outline-info openQueue" data-id="${q.id}">
+            <i class="ti ti-terminal"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-warning editQueue" data-id="${q.id}">
+            <i class="ti ti-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger deleteQueue" data-id="${q.id}">
+            <i class="ti ti-trash"></i>
+          </button>
+        </div>
+      `;
+
+      card.querySelector(".openQueue").onclick = () => openQueue(q);
+
+// ⚙️ Inicializar modal
+const queueModal = new bootstrap.Modal(document.getElementById('queueModal'));
+const queueModalTitle = document.getElementById('queueModalTitle');
+const queueNameInput = document.getElementById('queueNameInput');
+const queueIdInput = document.getElementById('queueIdInput');
+const saveQueueBtn = document.getElementById('saveQueueBtn');
+
+btnNewQueue.onclick = () => {
+  queueModalTitle.textContent = "Nueva Cola";
+  queueNameInput.value = "";
+  queueIdInput.value = "";
+  queueModal.show();
+};
+
+saveQueueBtn.onclick = async () => {
+  const name = queueNameInput.value.trim();
+  const id = queueIdInput.value;
+
+  if (!name) {
+    showMsg("El nombre no puede estar vacío.", "warning");
+    return;
+  }
+
+  if (id) {
+    // Editar
+    const res = await fetch(`/api/queues/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      showMsg("Cola actualizada correctamente.", "success");
+      queueModal.hide();
+      loadQueues();
+    } else {
+      showMsg("Error al actualizar la cola.", "danger");
+    }
+  } else {
+    // Crear
+    const res = await fetch("/api/queues", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      showMsg("Cola creada correctamente.", "success");
+      queueModal.hide();
+      loadQueues();
+    } else {
+      showMsg("Error al crear la cola.", "danger");
+    }
+  }
+};
+
+// ✏️ Editar desde card
+card.querySelector(".editQueue").onclick = () => {
+  queueModalTitle.textContent = "Editar Cola";
+  queueNameInput.value = q.name;
+  queueIdInput.value = q.id;
+  queueModal.show();
+};
+
+
+      card.querySelector(".deleteQueue").onclick = async () => {
+        if (!confirm(`¿Eliminar la cola "${q.name}"?`)) return;
+        const res = await fetch(`/api/queues/${q.id}`, { method: "DELETE", credentials: "include" });
+        if (res.ok) {
+          showMsg("Cola eliminada", "danger");
+          loadQueues();
+        }
+      };
+
+      queueList.appendChild(card);
+    });
+  }
+
+  async function openQueue(queue) {
+    currentQueue = queue;
+    queueTitle.textContent = queue.name;
+    document.querySelector(".queue-list").classList.add("d-none");
+    turnPanel.classList.remove("d-none");
+
+    const banner = document.getElementById("activeQueueBanner");
+    const nameEl = document.getElementById("activeQueueName");
+    nameEl.textContent = queue.name;
+    banner.classList.remove("d-none");
+
+    try {
+      await fetch(`/api/set-active-queue/${queue.id}`, { method: "POST" });
+      console.log(`🎯 Cola activa establecida: ${queue.name}`);
+    } catch (err) {
+      console.error("⚠️ Error configurando cola activa:", err);
+    }
+
+    await loadTurns();
+  }
+
+  btnBack.onclick = () => {
+    turnPanel.classList.add("d-none");
+    document.querySelector(".queue-list").classList.remove("d-none");
+    currentQueue = null;
+  };
+
+  async function loadTurns() {
+    const turns = await getJSON(`/api/queues/${currentQueue.id}/turns`);
+    turnList.innerHTML = "";
+    if (!turns.length) {
+      currentTurnNumber.textContent = "--";
+      currentTurnStatus.textContent = "Sin turnos aún";
+      return;
+    }
+
+    currentTurn = turns.find(t => t.status === "calling");
+    if (currentTurn) {
+      currentTurnNumber.textContent = currentTurn.turn_number;
+      currentTurnStatus.textContent = "En atención";
+    } else {
+      const last = turns[turns.length - 1];
+      currentTurnNumber.textContent = last.turn_number;
+      currentTurnStatus.textContent = "Esperando llamada";
+    }
+
+    const recent = turns.slice(-6).reverse();
+    recent.forEach(t => {
+      const el = document.createElement("div");
+      el.className = `turn-entry ${t.status}`;
+      el.innerHTML = `<strong>#${t.turn_number}</strong> <span>${t.status}</span>`;
+      turnList.appendChild(el);
+    });
+  }
+
+// ⚙️ Inicializar modal
+const queueModal = new bootstrap.Modal(document.getElementById('queueModal'));
+const queueModalTitle = document.getElementById('queueModalTitle');
+const queueNameInput = document.getElementById('queueNameInput');
+const queueIdInput = document.getElementById('queueIdInput');
+const saveQueueBtn = document.getElementById('saveQueueBtn');
+
+btnNewQueue.onclick = () => {
+  queueModalTitle.textContent = "Nueva Cola";
+  queueNameInput.value = "";
+  queueIdInput.value = "";
+  queueModal.show();
+};
+
+saveQueueBtn.onclick = async () => {
+  const name = queueNameInput.value.trim();
+  const id = queueIdInput.value;
+
+  if (!name) {
+    showMsg("El nombre no puede estar vacío.", "warning");
+    return;
+  }
+
+  if (id) {
+    // Editar
+    const res = await fetch(`/api/queues/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      showMsg("Cola actualizada correctamente.", "success");
+      queueModal.hide();
+      loadQueues();
+    } else {
+      showMsg("Error al actualizar la cola.", "danger");
+    }
+  } else {
+    // Crear
+    const res = await fetch("/api/queues", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      showMsg("Cola creada correctamente.", "success");
+      queueModal.hide();
+      loadQueues();
+    } else {
+      showMsg("Error al crear la cola.", "danger");
+    }
+  }
+};
+
+// ✏️ Editar desde card
+card.querySelector(".editQueue").onclick = () => {
+  queueModalTitle.textContent = "Editar Cola";
+  queueNameInput.value = q.name;
+  queueIdInput.value = q.id;
+  queueModal.show();
+};
+
+
+  btnAddTurn.onclick = async () => {
+    const res = await fetch(`/api/queues/${currentQueue.id}/turns`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    showMsg(`Turno ${data.turn_number} agregado`, "success");
+    loadTurns();
+  };
+
+  btnNext.onclick = async () => {
+    const res = await fetch(`/api/queues/${currentQueue.id}/call-next`, { method: "POST", credentials: "include" });
+    const data = await res.json();
+    showMsg(data.message || "Siguiente turno llamado", "info");
+    loadTurns();
+  };
+
+  btnComplete.onclick = async () => {
+    if (!currentTurn) return showMsg("No hay turno activo.", "warning");
+    await fetch(`/api/turns/${currentTurn.id}/complete`, { method: "PUT", credentials: "include" });
+    showMsg("Turno completado.", "success");
+    loadTurns();
+  };
+
+  btnSkip.onclick = async () => {
+    if (!currentTurn) return showMsg("No hay turno activo.", "warning");
+    await fetch(`/api/turns/${currentTurn.id}/skip`, { method: "PUT", credentials: "include" });
+    showMsg("Turno saltado.", "warning");
+    loadTurns();
+  };
+
+  loadQueues();
+});
+</script>
+
+
+
+<style>
+:root {
+  --cyan: #00bfff;
+  --bg-dark: #0d1117;
+  --bg-panel: #161b22;
+}
+.text-cyan { color: var(--cyan)!important; }
+.bg-panel { background-color: var(--bg-panel)!important; }
+
+.turnito-dashboard {
+  background: var(--bg-dark);
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 💠 Buttons */
+.btn-glass {
+  background: rgba(0,191,255,0.1);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  border-radius: 12px;
+  padding: 8px 16px;
+  transition: 0.2s;
+}
+.btn-glass:hover { background: var(--cyan); color: #000; }
+
+.queue-card {
+  border-radius: 14px;
+  transition: 0.25s ease;
+}
+.queue-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 15px #00eaff33;
+}
+
+.display-turn {
+  font-size: 6rem;
+  text-shadow: 0 0 25px var(--cyan);
+}
+.glow-text {
+  animation: glowPulse 2s infinite alternate;
+}
+@keyframes glowPulse {
+  from { text-shadow: 0 0 10px var(--cyan); }
+  to { text-shadow: 0 0 30px var(--cyan); }
+}
+
+/* ⚙️ Botones */
+.btn-action {
+  border: none;
+  padding: 18px 36px;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #fff;
+  transition: 0.2s;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+}
+.btn-action.green { background: #00d97e; }
+.btn-action.blue { background: #2196f3; }
+.btn-action.yellow { background: #ffc107; color: #000; }
+.btn-action.outline {
+  border: 2px solid var(--cyan);
+  background: transparent;
+  color: var(--cyan);
+}
+.btn-action:hover { opacity: 0.85; transform: scale(1.03); }
+
+/* 📜 Historial */
+.turn-history .turn-entry {
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e1e1e;
+}
+.turn-entry.calling { background: rgba(0,191,255,0.2); color: var(--cyan); }
+.turn-entry.completed { background: rgba(0,255,100,0.15); color: #0f0; }
+.turn-entry.skipped { background: rgba(255,255,0,0.2); color: #ff0; }
+.turn-entry.waiting { background: rgba(255,255,255,0.08); color: #ccc; }
+
+/* 🟦 Banner cola activa */
+.active-queue-banner {
+  position: fixed;
+  top: 75px;
+  right: 25px;
+  background: linear-gradient(90deg, #0b0f14, #0d1f2f);
+  color: #00eaff;
+  border: 1px solid #00eaff44;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 12px #00eaff33;
+  animation: slideIn 0.6s ease-out forwards;
+  z-index: 2000;
+}
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 💠 Dashboard cards */
+.dashboard-card {
+  background: linear-gradient(180deg, #111821, #0b0f14);
+  border-radius: 16px;
+  transition: all 0.25s ease;
+  border: 1px solid #00eaff22;
+}
+.dashboard-card:hover {
+  box-shadow: 0 0 20px rgba(0, 234, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.modal-content {
+  background: #10151c !important;
+  color: #fff !important;
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(0, 234, 255, 0.1);
+}
+
+</style>

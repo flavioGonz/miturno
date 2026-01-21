@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es" class="theme-dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= typeof title !=='undefined' ? title : 'Turnito Admin' %>
+  </title>
+
+  <!-- Resources -->
+  <link rel="stylesheet" href="/css/theme-dark.css">
+  <link rel="stylesheet" href="/css/tabler.min.css" />
+  <link rel="stylesheet" href="/icons/tabler-icons.min.css" />
+  <link rel="icon" href="/img/favicon.ico">
+
+  <!-- Core Scripts -->
+  <script src="/js/tabler.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    :root {
+      --sidebar-width: 250px;
+      --sidebar-width-collapsed: 80px;
+    }
+
+    body {
+      background-color: #0b0d10;
+      color: #e6edf3;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Layout & Transition */
+    .page {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .page-wrapper {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: margin-left 0.3s ease;
+      background: #0b0d10;
+      /* Canvas bg */
+    }
+
+    /* Collapsed State */
+    body.sidebar-collapsed .page-wrapper {
+      margin-left: var(--sidebar-width-collapsed);
+    }
+
+    body.sidebar-collapsed .sidebar-new {
+      width: var(--sidebar-width-collapsed);
+    }
+
+    /* Modals Custom Styling */
+    .modal-content-glass {
+      background: rgba(18, 20, 24, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border-radius: 16px;
+    }
+
+    .modal-icon-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 32px;
+    }
+
+    .icon-danger {
+      background: rgba(229, 62, 62, 0.1);
+      color: #e53e3e;
+    }
+
+    .icon-warning {
+      background: rgba(245, 159, 11, 0.1);
+      color: #f59f0b;
+    }
+
+    .icon-info {
+      background: rgba(32, 107, 196, 0.1);
+      color: #206bc4;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <%- include('partials/sidebar') %>
+      <%- include('partials/header') %> <!-- Scripts & Logic -->
+
+        <div class="page-wrapper">
+          <main>
+            <%- body %>
+          </main>
+        </div>
+  </div>
+
+  <!-- 1. MODAL REBOOT -->
+  <div class="modal fade" id="modalReboot" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content modal-content-glass text-center p-5">
+        <div class="modal-icon-circle icon-warning mb-4 pulse-warning">
+          <i class="ti ti-refresh fs-1"></i>
+        </div>
+        <h3 class="text-white fw-bold mb-3">Reiniciar Sistema</h3>
+        <p class="text-secondary small mb-4">La Raspberry Pi se reiniciará por completo. Perderás la conexión por unos
+          60 segundos.</p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-warning fw-bold py-2" onclick="execSystemAction('reboot')">REINICIAR AHORA</button>
+          <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">CANCELAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL SHUTDOWN -->
+  <div class="modal fade" id="modalShutdown" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content modal-content-glass text-center p-5">
+        <div class="modal-icon-circle icon-danger mb-4">
+          <i class="ti ti-power fs-1"></i>
+        </div>
+        <h3 class="text-white fw-bold mb-3">Apagar Equipo</h3>
+        <p class="text-secondary small mb-4">¿Confirmas el apagado total? <br> Para volver a encenderlo deberás
+          desconectar y conectar la fuente.</p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger fw-bold py-2" onclick="execSystemAction('shutdown')">APAGAR AHORA</button>
+          <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">CANCELAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL UPDATE -->
+  <div class="modal fade" id="modalUpdate" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content modal-content-glass text-center p-5">
+        <div class="modal-icon-circle icon-info mb-4">
+          <i class="ti ti-download fs-1"></i>
+        </div>
+        <h3 class="text-white fw-bold mb-3">Actualizar Turnito</h3>
+        <p class="text-secondary small mb-4">Buscando parches en el servidor central. El servicio se reiniciará
+          automáticamente al finalizar.</p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-primary fw-bold py-2" onclick="execSystemAction('update')">BUSCAR
+            ACTUALIZACIONES</button>
+          <button class="btn btn-ghost-secondary btn-sm" data-bs-dismiss="modal">CERRAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL RED (Restored Placeholder + Structure) -->
+  <div class="modal fade" id="modalRed" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+      <div class="modal-content modal-content-glass">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title">Conectividad WiFi</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- Simplified Network UI for stability -->
+          <div class="mb-3">
+            <label class="form-label">SSID</label>
+            <input type="text" id="ssid" class="form-control bg-dark border-secondary text-white"
+              placeholder="Nombre de red">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" id="pass" class="form-control bg-dark border-secondary text-white">
+          </div>
+          <button class="btn btn-primary w-100" onclick="guardarRedSimple()">Guardar y Conectar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. MODAL HDMI (Restored Placeholder + Structure) -->
+  <div class="modal fade" id="modalHdmi" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-content-glass p-4 text-center">
+        <h4 class="mb-3">Pantalla HDMI</h4>
+        <div id="hdmiStatusBadge" class="mb-3 badge bg-secondary">Cargando...</div>
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-success" onclick="controlHdmiPower('on')">Encender</button>
+          <button class="btn btn-danger" onclick="controlHdmiPower('off')">Apagar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Layout Logics ---
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    if (savedState === 'true') document.body.classList.add('sidebar-collapsed');
+
+    function toggleSidebar() {
+      const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
+    }
+
+    // Quick Fix for HDMI/Network simple logic since header was overwritten
+    async function controlHdmiPower(state) {
+      try { await fetch('/api/hdmi/power', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state }) }); }
+      catch (e) { }
+    }
+    async function guardarRedSimple() {
+      const ssid = document.getElementById('ssid').value;
+      const pass = document.getElementById('pass').value;
+      try {
+        await fetch('/api/network/wifi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ssid, psk: pass }) });
+        alert('Configuración enviada');
+      } catch (e) { alert('Error'); }
+    }
+  </script>
+</body>
+
+</html>

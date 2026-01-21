@@ -1,0 +1,144 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/pantallas.ejs
+  Descripción: Configuración de resolución y orientación HDMI + preview embebido
+  Versión: 4.1 - Botón flotante y limpieza de interfaz
+-->
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info m-0">
+      <i class="ti ti-device-desktop"></i> Configuración de Pantalla
+    </h2>
+      </div>
+
+  <div class="row">
+    <!-- Izquierda: Configuración HDMI -->
+    <div class="col-md-5 col-lg-4">
+      <div class="card bg-dark border-0 shadow-sm p-3 mb-4">
+        <h4 class="text-light mb-3"><i class="ti ti-settings"></i> Ajustes de HDMI</h4>
+
+        <div class="mb-3">
+          <label class="form-label text-light">Orientación</label>
+          <select id="orientation" class="form-select bg-dark text-light border-0">
+            <option value="0">Horizontal</option>
+            <option value="1">Vertical (90°)</option>
+            <option value="2">Invertida (180°)</option>
+            <option value="3">Vertical invertida (270°)</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-light">Resolución</label>
+          <select id="resolution" class="form-select bg-dark text-light border-0">
+            <option value="16">1024x768</option>
+            <option value="82">1920x1080</option>
+            <option value="97">2560x1440</option>
+            <option value="1360x768">1360x768</option>
+          </select>
+        </div>
+
+        <button id="saveResolution" class="btn btn-outline-success w-100">
+          <i class="ti ti-device-floppy"></i> Guardar Configuración
+        </button>
+         <button id="btnHdmiDiag" class="btn btn-outline-warning w-100 mt-3">
+  <i class="ti ti-device-analytics"></i> Diagnóstico HDMI
+</button>
+      </div>
+
+      <div id="hdmiResult" class="alert d-none"></div>
+    </div>
+
+    <!-- Derecha: Vista del Monitor -->
+    <div class="col-md-7 col-lg-8 position-relative">
+      <div class="card bg-black border-0 shadow-sm p-2 mb-3 position-relative overflow-hidden">
+        <iframe
+          id="previewFrame"
+          src="/monitor"
+          width="100%"
+          height="600"
+          style="border:none;border-radius:6px;background:#000;"
+        ></iframe>
+
+        <!-- Botón flotante de recarga -->
+        <button
+          id="refreshPreview"
+          class="btn btn-outline-secondary position-absolute"
+          style="bottom:20px; right:20px; border-radius:50%; width:50px; height:50px; display:flex; justify-content:center; align-items:center;"
+          title="Recargar vista"
+        >
+          <i class="ti ti-refresh fs-4"></i>
+        </button>
+
+       
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const orientation = document.getElementById('orientation');
+  const resolution = document.getElementById('resolution');
+  const saveResolution = document.getElementById('saveResolution');
+  const refreshPreview = document.getElementById('refreshPreview');
+  const previewFrame = document.getElementById('previewFrame');
+  const btnHdmiDiag = document.getElementById('btnHdmiDiag');
+  const hdmiResult = document.getElementById('hdmiResult');
+
+  const getJSON = async (url, opts = {}) => {
+    const res = await fetch(url, { credentials: 'include', ...opts });
+    const txt = await res.text();
+    try { return JSON.parse(txt); } catch { return {}; }
+  };
+
+  const showMsg = (msg, type = 'info') => {
+    hdmiResult.className = `alert alert-${type} mt-3`;
+    hdmiResult.textContent = msg;
+    hdmiResult.classList.remove('d-none');
+    setTimeout(() => hdmiResult.classList.add('d-none'), 6000);
+  };
+
+  // Cargar config actual
+  async function loadConfig() {
+    const data = await getJSON('/api/hdmi/config');
+    if (data.display_rotate) orientation.value = data.display_rotate;
+    if (data.hdmi_mode) resolution.value = data.hdmi_mode;
+  }
+
+  saveResolution.onclick = async () => {
+    const payload = {
+      orientation: orientation.value,
+      resolution: resolution.value
+    };
+    const res = await fetch('/api/hdmi/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showMsg(data.message || 'Configuración guardada', 'success');
+  };
+
+  // 🔄 Botón flotante
+  refreshPreview.onclick = () => {
+    previewFrame.src = '/monitor?cache=' + Date.now();
+  };
+
+  // 🔍 Diagnóstico HDMI
+  btnHdmiDiag.onclick = async () => {
+    showMsg('Detectando HDMI...', 'info');
+    try {
+      const status = await getJSON('/api/hdmi/status');
+      if (status.status)
+        showMsg('HDMI: ' + status.status, 'success');
+      else
+        showMsg('No se detectó monitor HDMI.', 'warning');
+    } catch (e) {
+      showMsg('Error detectando HDMI.', 'danger');
+    }
+  };
+
+  loadConfig();
+});
+</script>

@@ -1,0 +1,243 @@
+<div class="page-header d-print-none mb-4">
+    <div class="row align-items-center">
+        <div class="col">
+            <div class="page-pretitle">Panel General</div>
+            <h1 class="page-title">Centro de Operaciones</h1>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-new-queue">
+                <i class="ti ti-plus me-2"></i>Nueva Cola
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 📊 Widgets de Estadísticas -->
+<div class="row row-deck mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm glass-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-primary text-white avatar shadow-sm">
+                            <i class="ti ti-users"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium" id="stat-total-waiting">0</div>
+                        <div class="text-secondary small">Esperando ahora</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm glass-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-green text-white avatar shadow-sm">
+                            <i class="ti ti-ticket"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium" id="stat-active-queues">0</div>
+                        <div class="text-secondary small">Colas activas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm glass-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-info text-white avatar shadow-sm">
+                            <i class="ti ti-printer"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium" id="stat-printer-status">Verificando...</div>
+                        <div class="text-secondary small">Estado Impresora</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm glass-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-warning text-white avatar shadow-sm">
+                            <i class="ti ti-device-tv"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium">HDMI Activo</div>
+                        <div class="text-secondary small">Pantalla Principal</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📋 Listado de Colas -->
+<div class="row row-cards" id="queue-list">
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-secondary">Cargando estaciones de servicio...</div>
+    </div>
+</div>
+
+<!-- 🔹 Modal Nueva Cola -->
+<div class="modal modal-blur fade" id="modal-new-queue" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurar Nueva Estación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Sector</label>
+                    <input type="text" class="form-control" id="queue-name-input" placeholder="Ej: Carnicería, Caja 1...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="create-queue-btn">Crear Estación</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .glass-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .queue-card {
+        border-left: 4px solid #206bc4;
+    }
+    .queue-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        color: #fff;
+        text-shadow: 0 0 15px rgba(32, 107, 196, 0.5);
+    }
+    .badge-waiting {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const queueList = document.getElementById('queue-list');
+        const createBtn = document.getElementById('create-queue-btn');
+        const nameInput = document.getElementById('queue-name-input');
+        
+        const fetchSummary = () => {
+            fetch('/api/queues/summary')
+                .then(res => res.json())
+                .then(queues => {
+                    renderQueues(queues);
+                    updateStats(queues);
+                })
+                .catch(err => console.error('Error fetching summary:', err));
+        };
+
+        const updateStats = (queues) => {
+            let totalWaiting = 0;
+            queues.forEach(q => totalWaiting += q.waiting_count);
+            document.getElementById('stat-total-waiting').innerText = totalWaiting;
+            document.getElementById('stat-active-queues').innerText = queues.length;
+            
+            // Simular chequeo de impresora (o llamar a API real)
+            fetch('/api/print/status')
+                .then(res => res.json())
+                .then(status => {
+                    const el = document.getElementById('stat-printer-status');
+                    el.innerText = status.connected ? 'Conectada' : 'No detectada';
+                    el.className = status.connected ? 'font-weight-medium text-green' : 'font-weight-medium text-danger';
+                });
+        };
+
+        const renderQueues = (queues) => {
+            if (queues.length === 0) {
+                queueList.innerHTML = '<div class="col-12 text-center text-secondary">No hay colas configuradas.</div>';
+                return;
+            }
+            queueList.innerHTML = '';
+            queues.forEach(q => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-xl-4';
+                col.innerHTML = `
+                    <div class="card queue-card glass-card shadow-sm h-100">
+                        <div class="card-body position-relative">
+                            <span class="badge bg-blue-lite text-blue badge-waiting">
+                                ${q.waiting_count} en espera
+                            </span>
+                            <div class="mb-3">
+                                <h3 class="card-title h2 mb-1">${q.name}</h3>
+                                <div class="text-secondary small text-uppercase">Turno Actual</div>
+                            </div>
+                            <div class="py-3 text-center">
+                                <div class="queue-number">${q.current_turn || '---'}</div>
+                            </div>
+                            <div class="mt-4 d-flex gap-2">
+                                <button class="btn btn-primary flex-fill" onclick="callNext(${q.id})">
+                                    <i class="ti ti-player-skip-forward me-2"></i>Llama Siguiente
+                                </button>
+                                <a href="/queue/${q.id}" class="btn btn-outline-secondary btn-icon" title="Gestionar">
+                                    <i class="ti ti-settings"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                queueList.appendChild(col);
+            });
+        };
+
+        window.callNext = (id) => {
+            fetch(`/api/queues/${id}/call-next`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.message) {
+                        // Toast o notificación opcional
+                        fetchSummary();
+                    }
+                });
+        };
+
+        createBtn.addEventListener('click', () => {
+            if (!nameInput.value.trim()) return;
+            fetch('/api/queues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nameInput.value })
+            }).then(() => {
+                nameInput.value = '';
+                bootstrap.Modal.getInstance(document.getElementById('modal-new-queue')).hide();
+                fetchSummary();
+            });
+        });
+
+        // Polling cada 5 segundos para mantener el dashboard vivo
+        setInterval(fetchSummary, 5000);
+        fetchSummary();
+    });
+</script>

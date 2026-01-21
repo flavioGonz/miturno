@@ -1,0 +1,253 @@
+<!-- 
+  File: /views/sistema/fullpageos.ejs
+  Descripción: Panel de Configuración FullPageOS - Tech Studio Edition
+  Versión: 3.0 - Editor de Archivos Críticos con UI Industrial
+-->
+
+<div class="studio-wrapper animate-in fade-in duration-500">
+  <div class="container-fluid py-4 h-100">
+    <!-- 🧭 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+      <div>
+        <div class="text-secondary small fw-bold text-uppercase tracking-widest mb-1">Entorno de Pantalla Publica</div>
+        <h2 class="text-white fw-bold m-0 d-flex align-items-center gap-3">
+          <i class="ti ti-browser text-azure fs-1"></i>
+          Gestión <span class="text-azure">FullPageOS</span>
+        </h2>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn-tech-outline text-warning border-warning-20" id="restartFP">
+          <i class="ti ti-refresh"></i> <span>Reiniciar Entorno</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- 📄 EDITOR 1: CONFIG.TXT -->
+      <div class="col-lg-6">
+        <div class="tech-card h-100">
+          <div class="card-edge-azure"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4 class="text-white fw-bold m-0 d-flex align-items-center gap-2">
+                <i class="ti ti-file-code text-azure"></i> config.txt
+              </h4>
+              <span class="text-secondary small fw-bold">BOOT CONFIG</span>
+            </div>
+            <p class="text-secondary small mb-3">Configuración de bajo nivel del sistema de video y GPU.</p>
+
+            <div class="editor-container">
+              <textarea id="configTxt" class="tech-textarea" spellcheck="false"
+                placeholder="Cargando configuración..."></textarea>
+            </div>
+
+            <div class="mt-4">
+              <button class="btn-tech-primary w-100 py-3" id="saveConfig">
+                <i class="ti ti-device-floppy"></i> Sobrescribir config.txt
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 📄 EDITOR 2: FULLPAGEOS.TXT -->
+      <div class="col-lg-6">
+        <div class="tech-card h-100">
+          <div class="card-edge-green"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4 class="text-white fw-bold m-0 d-flex align-items-center gap-2">
+                <i class="ti ti-world-www text-green"></i> fullpageos.txt
+              </h4>
+              <span class="text-secondary small fw-bold">URL SETTINGS</span>
+            </div>
+            <p class="text-secondary small mb-3">Define la URL por defecto que se cargará al iniciar el sistema.</p>
+
+            <div class="editor-container">
+              <textarea id="fpTxt" class="tech-textarea" spellcheck="false"
+                placeholder="Cargando configuración..."></textarea>
+            </div>
+
+            <div class="mt-4">
+              <button class="btn-tech-success w-100 py-3" id="saveFP">
+                <i class="ti ti-device-floppy"></i> Guardar Nueva URL
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💡 INFO SECTION -->
+    <div class="mt-4 px-2">
+      <div class="d-flex align-items-start gap-3 p-3 bg-black-20 border border-white-5 rounded">
+        <i class="ti ti-info-circle fs-2 text-azure"></i>
+        <div class="small text-secondary">
+          <strong class="text-white">Nota de Seguridad:</strong> Los cambios realizados en estos archivos requieren un
+          reinicio completo del sistema para surtir efecto en el hardware. Tenga cuidado al modificar parámetros de
+          video en config.txt ya que podrían dejar la pantalla sin señal.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 🌑 TECH THEME EXTENSION */
+  body {
+    background: #0b0d0e;
+  }
+
+  .tech-card {
+    background: #121417;
+    border: 1px solid #1f2226;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-edge-azure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #206bc4;
+  }
+
+  .card-edge-green {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #2fb344;
+  }
+
+  /* 🖋️ TEXTAREA EDITOR */
+  .tech-textarea {
+    width: 100%;
+    height: 400px;
+    background: #08090a;
+    border: 1px solid #2a2e33;
+    color: #00ff41;
+    /* Estilo Matrix / Terminal */
+    font-family: 'Fira Code', 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    padding: 20px;
+    border-radius: 4px;
+    resize: none;
+    transition: all 0.3s;
+    line-height: 1.5;
+  }
+
+  .tech-textarea:focus {
+    outline: none;
+    border-color: #206bc4;
+    background: #000;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  }
+
+  /* 🔘 BUTTONS */
+  .btn-tech-primary {
+    background: #206bc4;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 4px;
+    transition: 0.2s;
+  }
+
+  .btn-tech-success {
+    background: #2fb344;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    border-radius: 4px;
+    transition: 0.2s;
+  }
+
+  .btn-tech-outline {
+    background: transparent;
+    border: 1px solid #1f2226;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .btn-tech-primary:hover,
+  .btn-tech-success:hover {
+    filter: brightness(1.2);
+    transform: translateY(-1px);
+  }
+
+  .border-warning-20 {
+    border-color: rgba(255, 193, 7, 0.2) !important;
+  }
+
+  /* UTILS */
+  .text-azure {
+    color: #206bc4;
+  }
+
+  .bg-black-20 {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .border-white-5 {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+</style>
+
+<script>
+  (async () => {
+    const api = async (u, o = {}) => (await fetch(u, { credentials: 'include', ...o })).json();
+
+    // Cargar datos iniciales
+    const loadData = async () => {
+      const c = await api('/api/system/fullpageos/config');
+      const f = await api('/api/system/fullpageos/settings');
+      document.getElementById('configTxt').value = c.config || '# Error cargando archivo';
+      document.getElementById('fpTxt').value = f.config || '# Error cargando archivo';
+    };
+
+    document.getElementById('saveConfig').onclick = async () => {
+      const btn = document.getElementById('saveConfig');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="ti ti-loader rotate"></i> GUARDANDO...';
+
+      await fetch('/api/system/fullpageos/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: document.getElementById('configTxt').value })
+      });
+
+      btn.innerHTML = '<i class="ti ti-check"></i> ¡GUARDADO!';
+      setTimeout(() => { btn.innerHTML = original; }, 2000);
+    };
+
+    document.getElementById('saveFP').onclick = async () => {
+      const btn = document.getElementById('saveFP');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="ti ti-loader rotate"></i> GUARDANDO...';
+
+      await fetch('/api/system/fullpageos/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: document.getElementById('fpTxt').value })
+      });
+
+      btn.innerHTML = '<i class="ti ti-check"></i> ¡VINCULADO!';
+      setTimeout(() => { btn.innerHTML = original; }, 2000);
+    };
+
+    document.getElementById('restartFP').onclick = async () => {
+      if (!confirm('¿Desea reiniciar el entorno FullPageOS ahora?')) return;
+      await fetch('/api/system/fullpageos/restart', { method: 'POST' });
+      alert('Comando de reinicio enviado.');
+    };
+
+    loadData();
+  })();
+</script>

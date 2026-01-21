@@ -1,0 +1,355 @@
+<!--
+  File: /home/fgonzalez/turnito/views/monitor.ejs
+  Descripción: Pantalla pública horizontal Turnito Admin - versión 6.5
+  Autor: Flavio González - Infratec Networks (Uruguay, 2025)
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pantalla Pública - Turnito</title>
+  <link rel="stylesheet" href="/css/tabler-dark.min.css">
+  <link rel="stylesheet" href="/icons/tabler-icons.min.css">
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #001122;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .container { display: flex; height: 100vh; }
+
+    /* PANEL IZQUIERDO */
+    .turn-panel {
+      width: 65%;
+      position: relative;
+      background: #f9f9f9;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* Fondo inferior */
+    .turn-panel::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40%;
+      background: url("/media/panaderia.jpg") center bottom / cover no-repeat;
+      opacity: 0.15;
+      z-index: 0;
+    }
+
+    /* BARRA SUPERIOR INFO */
+    .top-bar {
+      width: 100%;
+      background: #003366;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 40px;
+      font-size: 1.6rem;
+      box-shadow: 0 2px 8px #0006;
+      z-index: 2;
+    }
+    .top-bar div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .top-bar i {
+      color: #00bfff;
+      font-size: 1.8rem;
+    }
+
+    /* TURNOS */
+    .turn-label {
+      font-size: 2rem;
+      color: #007bff;
+      margin-top: 60px;
+      z-index: 2;
+    }
+    .turn-number {
+      font-size: 12rem;
+      font-weight: 800;
+      color: #000;
+      text-shadow: 0 0 40px #007bff44;
+      margin: 0;
+      z-index: 2;
+    }
+    .queue-name {
+      font-size: 2.3rem;
+      color: #333;
+      margin-top: 10px;
+      z-index: 2;
+    }
+
+    /* TURNOS EN ESPERA */
+    .waiting-turns {
+      margin-top: 40px;
+      font-size: 2rem;
+      color: #222;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 2;
+      position: relative;
+    }
+    .waiting-turn {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 15px 35px;
+      border-radius: 16px;
+      box-shadow: 0 0 8px #0002 inset;
+      font-weight: 600;
+    }
+
+    /* PANEL DERECHO */
+    .ad-panel {
+      width: 35%;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .ad-panel img.ad-slide {
+      width: 100%;
+      height: calc(100vh - 160px);
+      object-fit: cover;
+      position: absolute;
+      top: 0; left: 0;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .ad-panel img.ad-slide.active { opacity: 1; }
+
+    /* NOTICIAS */
+    #newsSection {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(90deg, #001e3c, #003060);
+      border-top: 2px solid #00bfff66;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 10px 20px;
+      z-index: 2;
+    }
+    .news-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      justify-content: flex-start;
+    }
+    .news-card.active { opacity: 1; }
+    .news-thumb {
+      width: 120px;
+      height: 120px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #111;
+      border: 1px solid #00bfff55;
+    }
+    .news-text {
+      flex: 1;
+      color: #fff;
+      font-size: 1.4rem;
+      text-align: left;
+      line-height: 1.3;
+    }
+    .news-text i { color: #00bfff; margin-right: 6px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- PANEL IZQUIERDO -->
+    <div class="turn-panel">
+      <div class="top-bar">
+        <div><i class="ti ti-clock-hour-4"></i> <span id="clock">--:--:--</span></div>
+        <div><i class="ti ti-cloud-sun"></i> <span id="weather">Montevideo: --°C</span></div>
+      </div>
+
+      <div class="turn-label"><i class="ti ti-bell"></i> Turno actual</div>
+       <div class="turn-label"></div>
+       
+
+      <h1 id="turnNumber" class="turn-number">--</h1>
+   
+       <div class="turn-label"></div>
+
+      <div id="queueName" class="queue-name">Cargando...</div>
+      <div id="waitingTurns" class="waiting-turns">—</div>
+
+      <audio id="turnSound" src="/media/chime.mp3" preload="auto"></audio>
+    </div>
+
+    <!-- PANEL DERECHO -->
+    <div class="ad-panel">
+      <img src="/media/publi1.jpg" class="ad-slide active" alt="Publicidad 1">
+      <img src="/media/publi2.jpg" class="ad-slide" alt="Publicidad 2">
+      <img src="/media/publi3.jpg" class="ad-slide" alt="Publicidad 3">
+      <div id="newsSection"></div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const clockEl = document.getElementById('clock');
+    const weatherEl = document.getElementById('weather');
+    const turnNum = document.getElementById('turnNumber');
+    const queueName = document.getElementById('queueName');
+    const waitingTurnsEl = document.getElementById('waitingTurns');
+    const sound = document.getElementById('turnSound');
+    const ads = document.querySelectorAll('.ad-slide');
+    const newsSection = document.getElementById('newsSection');
+
+    let lastShown = { queue: null, turn: null };
+    let queues = [];
+    let adIndex = 0;
+    let newsIndex = 0;
+    let newsItems = [];
+
+    /* 🕒 HORA */
+    setInterval(() => {
+      const d = new Date();
+      clockEl.textContent = d.toLocaleTimeString('es-UY', { hour12: false });
+    }, 1000);
+
+    /* ☁️ CLIMA */
+    async function loadWeather() {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-34.9&longitude=-56.2&current_weather=true');
+        const data = await res.json();
+        const w = data.current_weather;
+        if (w) {
+          const icon = w.weathercode < 3 ? '☀️' : (w.weathercode < 50 ? '🌤️' : '🌧️');
+          weatherEl.textContent = `Montevideo: ${w.temperature}°C ${icon}`;
+        }
+      } catch { weatherEl.textContent = 'Clima no disponible'; }
+    }
+
+    /* 📰 NOTICIAS */
+    async function loadNews() {
+      try {
+        const res = await fetch('/api/news');
+        const text = await res.text();
+        let tempItems = [];
+        try {
+          const json = JSON.parse(text);
+          if (json?.results?.length) {
+            tempItems = json.results.slice(0, 10).map(n => ({
+              title: n.title,
+              image: n.image_url || '/media/news-default.jpg'
+            }));
+          }
+        } catch {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(text, "text/xml");
+          const items = Array.from(xml.querySelectorAll("item")).slice(0, 10);
+          tempItems = items.map(it => ({
+            title: it.querySelector("title")?.textContent,
+            image: '/media/news-default.jpg'
+          }));
+        }
+        newsItems = tempItems.length ? tempItems : [{ title: 'No hay noticias recientes en Uruguay.', image: '/media/news-default.jpg' }];
+        showNews();
+      } catch {
+        newsItems = [{ title: 'Sin conexión o fuente no disponible.', image: '/media/news-default.jpg' }];
+        showNews();
+      }
+    }
+
+    function showNews() {
+      if (!newsItems.length) return;
+      newsSection.innerHTML = '';
+      const item = newsItems[newsIndex];
+      const card = document.createElement('div');
+      card.className = 'news-card active';
+      card.innerHTML = `
+        <img src="${item.image}" class="news-thumb" alt="">
+        <div class="news-text"><i class="ti ti-point"></i>${item.title}</div>
+      `;
+      newsSection.appendChild(card);
+      newsIndex = (newsIndex + 1) % newsItems.length;
+    }
+
+    setInterval(() => {
+      const old = newsSection.querySelector('.news-card');
+      if (old) old.classList.remove('active');
+      setTimeout(showNews, 1000);
+    }, 10000);
+
+    /* 🎞 PUBLICIDAD */
+    function rotateAds() {
+      ads[adIndex].classList.remove('active');
+      adIndex = (adIndex + 1) % ads.length;
+      ads[adIndex].classList.add('active');
+    }
+    setInterval(rotateAds, 8000);
+
+    async function getJSON(url) {
+      try {
+        const res = await fetch(url);
+        return await res.json();
+      } catch { return {}; }
+    }
+
+    /* 🔁 TURNOS */
+    async function fetchTurn() {
+      try {
+        if (!queues.length) queues = await getJSON('/public/queues');
+        if (!queues.length) {
+          queueName.textContent = 'Sin colas registradas';
+          return;
+        }
+
+        const activeQueue = queues[0];
+        const turns = await getJSON(`/public/queues/${activeQueue.id}/turns`);
+        const current = turns.find(t => t.status === 'calling');
+        const waiting = turns.filter(t => t.status === 'waiting').slice(0, 4);
+
+        if (current && (current.turn_number !== lastShown.turn || activeQueue.name !== lastShown.queue)) {
+          lastShown = { queue: activeQueue.name, turn: current.turn_number };
+          turnNum.textContent = current.turn_number;
+          queueName.textContent = activeQueue.name;
+          sound.currentTime = 0; sound.play().catch(()=>{});
+        }
+
+        waitingTurnsEl.innerHTML = waiting.map(t => `<div class="waiting-turn">${t.turn_number}</div>`).join('') || '—';
+      } catch { queueName.textContent = 'Error cargando datos'; }
+    }
+
+    /* Inicialización */
+    loadWeather(); loadNews(); fetchTurn();
+    setInterval(fetchTurn, 5000);
+    setInterval(loadWeather, 300000);
+    setInterval(loadNews, 600000);
+
+    const socket = io();
+    socket.on('turn-update', fetchTurn);
+  });
+  </script>
+</body>
+</html>

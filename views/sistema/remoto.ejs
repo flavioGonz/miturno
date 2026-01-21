@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>Turnito Control</title>
+
+    <!-- App Icon (Ticket) -->
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/512/ticket.png">
+
+    <link rel="stylesheet" href="/icons/tabler-icons.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deep: #000000;
+            --surface: #1c1c1e;
+            --surface-light: #2c2c2e;
+            --accent: #0A84FF;
+            --accent-dim: rgba(10, 132, 255, 0.2);
+            --danger: #FF453A;
+            --warning: #FF9F0A;
+            --text-main: #ffffff;
+            --text-sec: #8e8e93;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Outfit', -apple-system, sans-serif;
+            margin: 0;
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+        }
+
+        .app-name {
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--text-sec);
+            text-transform: uppercase;
+        }
+
+        /* DISPLAY AREA (Swipeable) */
+        .stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 70%);
+            border-radius: 30px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .queue-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 18px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .big-number {
+            font-size: 9rem;
+            font-weight: 900;
+            line-height: 0.9;
+            margin: 0;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .big-number.pop {
+            transform: scale(1.2);
+            color: var(--accent);
+        }
+
+        .big-number.prev {
+            transform: scale(0.9);
+            opacity: 0.5;
+        }
+
+        .status-text {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: var(--text-sec);
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .gesture-hint {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            opacity: 0.3;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* CONTROLS */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: var(--surface);
+            border: none;
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #fff;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .control-btn:active {
+            transform: scale(0.96);
+            filter: brightness(1.2);
+        }
+
+        .control-btn i {
+            font-size: 1.8rem;
+        }
+
+        .control-btn span {
+            font-size: 0.8rem;
+            font-weight: 700;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+
+        .btn-xl {
+            grid-column: 1 / -1;
+            padding: 30px;
+            background: var(--accent);
+            box-shadow: 0 10px 30px var(--accent-dim);
+        }
+
+        .btn-xl i {
+            font-size: 2.5rem;
+        }
+
+        .btn-xl span {
+            font-size: 1.1rem;
+        }
+
+        .btn-danger {
+            background: rgba(255, 69, 58, 0.15);
+            color: var(--danger);
+        }
+
+        .btn-manual {
+            background: transparent;
+            border: 2px dashed #333;
+            color: var(--text-sec);
+            grid-column: 1 / -1;
+            padding: 15px;
+        }
+
+        /* QUEUE SELECTOR */
+        .queue-scroller {
+            display: flex;
+            gap: 10px;
+            padding: 15px 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-top: 10px;
+        }
+
+        .queue-scroller::-webkit-scrollbar {
+            display: none;
+        }
+
+        .q-chip {
+            background: var(--surface);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-sec);
+            white-space: nowrap;
+        }
+
+        .q-chip.active {
+            background: #fff;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="app-name">Turnito Control</div>
+        <i class="ti ti-wifi" style="color:var(--success)"></i>
+    </header>
+
+    <div class="stage" id="touchArea">
+        <div id="queueNameBadge" class="queue-badge">Cargando...</div>
+        <h1 id="currentNumber" class="big-number">--</h1>
+        <div id="statusLabel" class="status-text">Desliza para avanzar</div>
+        <div class="gesture-hint">← Siguiente &nbsp;&nbsp;•&nbsp;&nbsp; Anterior →</div>
+    </div>
+
+    <div class="controls-grid">
+        <!-- NEXT -->
+        <button class="control-btn btn-xl" onclick="action('call-next')">
+            <i class="ti ti-bell-ringing-2-filled"></i>
+            <span>Llamar Siguiente</span>
+        </button>
+
+        <!-- PREV -->
+        <button class="control-btn" onclick="action('call-prev')">
+            <i class="ti ti-arrow-back-up"></i>
+            <span>Anterior</span>
+        </button>
+
+        <!-- RESET -->
+        <button class="control-btn btn-danger"
+            onclick="if(confirm('¿ESTÁS SEGURO DE BORRAR TODA LA FILA?\nEsta acción no se puede deshacer.')) action('reset')">
+            <i class="ti ti-trash"></i>
+            <span>Borrar Fila</span>
+        </button>
+
+        <!-- MANUAL -->
+        <button class="control-btn btn-manual" onclick="action('add')">
+            <i class="ti ti-plus"></i>
+            <span>Nuevo Turno Manual</span>
+        </button>
+    </div>
+
+    <div class="queue-scroller" id="queueScroller"></div>
+
+    <script>
+        const socket = io();
+        let currentQueueId = 1;
+
+        // Vibration
+        function pulse(pattern) { if (navigator.vibrate) navigator.vibrate(pattern || 10); }
+
+        // Data
+        async function api(url, method = 'POST') {
+            try { return await (await fetch(url, { method })).json(); } catch (e) { }
+        }
+
+        async function init() {
+            // Load Queues
+            try {
+                const qs = await (await fetch('/api/queues')).json();
+                const scroller = document.getElementById('queueScroller');
+                scroller.innerHTML = '';
+                qs.forEach(q => {
+                    const b = document.createElement('div');
+                    b.className = `q-chip ${currentQueueId == q.id ? 'active' : ''}`;
+                    b.textContent = q.name;
+                    b.onclick = () => switchQueue(q);
+                    scroller.appendChild(b);
+                });
+                if (qs.length) switchQueue(qs.find(q => q.id == currentQueueId) || qs[0]);
+            } catch (e) { }
+        }
+
+        async function switchQueue(q) {
+            currentQueueId = q.id;
+            document.getElementById('queueNameBadge').textContent = q.name;
+            document.querySelectorAll('.q-chip').forEach(c => c.classList.remove('active'));
+            const chips = document.querySelectorAll('.q-chip');
+            for (let c of chips) if (c.textContent === q.name) c.classList.add('active');
+
+            await api(`/api/set-active-queue/${q.id}`);
+            refresh();
+        }
+
+        async function refresh() {
+            try {
+                const turns = await (await fetch(`/api/queues/${currentQueueId}/turns`)).json();
+                const current = turns.find(t => t.status === 'calling');
+                const last = turns.filter(t => t.status === 'completed').sort((a, b) => b.id - a.id)[0];
+                const num = document.getElementById('currentNumber');
+                const stat = document.getElementById('statusLabel');
+
+                if (current) {
+                    num.textContent = current.turn_number.toString().padStart(2, '0');
+                    stat.textContent = "Llamando ahora...";
+                    stat.style.color = "var(--accent)";
+                } else if (last) {
+                    num.textContent = last.turn_number.toString().padStart(2, '0');
+                    stat.textContent = "Último completado";
+                    stat.style.color = "var(--text-sec)";
+                } else {
+                    num.textContent = "--";
+                    stat.textContent = "Sin actividad";
+                }
+            } catch (e) { }
+        }
+
+        async function action(act) {
+            pulse(act === 'reset' ? [50, 50, 50] : 30);
+
+            // UI Feedback
+            const n = document.getElementById('currentNumber');
+            if (act === 'call-next') { n.classList.add('pop'); setTimeout(() => n.classList.remove('pop'), 200); }
+            if (act === 'call-prev') { n.classList.add('prev'); setTimeout(() => n.classList.remove('prev'), 200); }
+
+            if (act === 'call-next') await api(`/api/queues/${currentQueueId}/call-next`);
+            if (act === 'call-prev') await api(`/api/queues/${currentQueueId}/call-prev`);
+            if (act === 'reset') await api(`/api/queues/${currentQueueId}/reset`);
+            if (act === 'add') await api(`/api/queues/${currentQueueId}/turns`);
+
+            refresh();
+        }
+
+        socket.on('turn-update', (d) => { if (d.queue_id == currentQueueId) refresh(); });
+        document.addEventListener('DOMContentLoaded', init);
+
+        // --- SWIPE LOGIC ---
+        let tx = 0, ty = 0;
+        const stage = document.getElementById('touchArea');
+
+        stage.addEventListener('touchstart', e => {
+            tx = e.changedTouches[0].screenX;
+            ty = e.changedTouches[0].screenY;
+            stage.style.transform = 'scale(0.98)';
+        }, { passive: false });
+
+        stage.addEventListener('touchend', e => {
+            stage.style.transform = 'scale(1)';
+            const dx = e.changedTouches[0].screenX - tx;
+            const dy = e.changedTouches[0].screenY - ty;
+
+            // Horizontal Swipe
+            if (Math.abs(dx) > 60 && Math.abs(dy) < 100) {
+                if (dx < 0) action('call-next'); // Drag Left -> Next
+                if (dx > 0) action('call-prev'); // Drag Right -> Prev
+            }
+        }, { passive: false });
+
+    </script>
+</body>
+
+</html>

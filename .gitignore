@@ -1,0 +1,24 @@
+node_modules/
+db/*.db
+db/*.db-shm
+db/*.db-wal
+active_queue.json
+cookies.txt
+*.log
+.env
+.DS_Store
+deploy.tar.gz
+update_full_v2.tar.gz
+update_ui.tar.gz
+turnito.rar
+backups/
+respaldo/
+miturno/
+img/
+node_modules/
+index copy*.js
+index_backup*.js
+index_current.js
+index_from_server*.js
+index_hdmi_new.js
+index_to_edit*.js

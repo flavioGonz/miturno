@@ -1,0 +1,442 @@
+<!--
+  File: /views/sistema/servicios.ejs
+  Descripción: Monitor de Capas de Servicio - Studio Edition v2.1
+  Versión: 9.1 - Dual Layer Monitoring - Debug & Resilience
+-->
+
+<div class="studio-wrapper animate-in fade-in duration-500">
+  <div class="container-fluid py-4 h-100">
+    <!-- 🧭 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+      <div>
+        <div class="text-secondary-50 small fw-bold text-uppercase tracking-widest mb-1">Diagnóstico Multinivel</div>
+        <h2 class="text-white fw-bold m-0 d-flex align-items-center gap-3">
+          <i class="ti ti-activity-heartbeat text-azure fs-1"></i>
+          Estado de <span class="text-azure">Servicios</span>
+        </h2>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn-tech-outline" id="btnRefreshAll">
+          <i class="ti ti-refresh"></i> <span>Refrescar Todo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 🚀 LAYER 1: TURNITO NATIVE HARDWARE / APP -->
+    <div class="mb-5">
+      <div class="d-flex align-items-center gap-3 mb-4 px-2">
+        <div class="layer-indicator bg-azure"></div>
+        <h4 class="m-0 text-white fw-bold tracking-tight">Capa de Aplicación y Hardware <span
+            class="text-secondary-50 small ms-2">CORE ENGINE</span></h4>
+      </div>
+
+      <div class="row g-3" id="appServices">
+        <!-- Backend -->
+        <div class="col-md-4 col-xl-2">
+          <div class="svc-card-studio" id="svc-backend">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="icon-box-azure"><i class="ti ti-server-cog"></i></div>
+              <span class="status-indicator-lite">---</span>
+            </div>
+            <div class="fw-black text-white small text-uppercase">Backend API</div>
+            <div class="text-secondary-50 extra-small">Express Engine</div>
+          </div>
+        </div>
+        <!-- Frontend -->
+        <div class="col-md-4 col-xl-2">
+          <div class="svc-card-studio" id="svc-frontend">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="icon-box-azure"><i class="ti ti-viewport-wide"></i></div>
+              <span class="status-indicator-lite">---</span>
+            </div>
+            <div class="fw-black text-white small text-uppercase">Frontend UI</div>
+            <div class="text-secondary-50 extra-small">Server Rendering</div>
+          </div>
+        </div>
+        <!-- Printer -->
+        <div class="col-md-4 col-xl-2">
+          <div class="svc-card-studio" id="svc-printer">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="icon-box-azure"><i class="ti ti-printer"></i></div>
+              <span class="status-indicator-lite">---</span>
+            </div>
+            <div class="fw-black text-white small text-uppercase">Impresión</div>
+            <div class="text-secondary-50 extra-small" id="txt-printer">ESC/POS USB/NET</div>
+          </div>
+        </div>
+        <!-- HDMI -->
+        <div class="col-md-4 col-xl-2">
+          <div class="svc-card-studio" id="svc-hdmi">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="icon-box-azure"><i class="ti ti-device-tv"></i></div>
+              <span class="status-indicator-lite">---</span>
+            </div>
+            <div class="fw-black text-white small text-uppercase">Salida HDMI</div>
+            <div class="text-secondary-50 extra-small" id="txt-hdmi">DRM Graphics</div>
+          </div>
+        </div>
+        <!-- GPIO -->
+        <div class="col-md-4 col-xl-2">
+          <div class="svc-card-studio" id="svc-gpio">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div class="icon-box-azure"><i class="ti ti-circuit-board"></i></div>
+              <span class="status-indicator-lite">---</span>
+            </div>
+            <div class="fw-black text-white small text-uppercase">Bus GPIO</div>
+            <div class="text-secondary-50 extra-small">Hardware Pins</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📑 LAYER 2: SYSTEMD SERVICES (LINUX) -->
+    <div class="tech-card-container border-0">
+      <div class="tech-card-header px-4 py-3 d-flex justify-content-between align-items-center">
+        <h4 class="m-0 text-white fw-bold d-flex align-items-center gap-2">
+          <i class="ti ti-linux-box text-azure"></i> Registro de Unidades de Sistema
+        </h4>
+        <div class="badge-tech">SYSTEMD MONITOR</div>
+      </div>
+      <div class="p-0">
+        <div class="table-responsive">
+          <table class="table-studio mb-0" id="linuxServicesTable">
+            <thead>
+              <tr>
+                <th class="ps-4">IDENTIFICADOR DE UNIDAD</th>
+                <th class="text-center">CARGA</th>
+                <th class="text-center">ESTADO OPERATIVO</th>
+                <th class="text-center">SUB-ESTADO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="linuxServicesBody">
+              <tr>
+                <td colspan="5" class="text-center py-5">
+                  <div class="spinner-border text-azure spinner-border-sm me-2"></div>
+                  <span class="text-secondary small italic">Sincronizando con systemctl...</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 🌑 ZERO-DEPENDENCY STUDIO STYLES */
+  body {
+    background: #0b0d0e;
+  }
+
+  .layer-indicator {
+    width: 4px;
+    height: 24px;
+    border-radius: 2px;
+  }
+
+  /* 🧠 SVC CARDS */
+  .svc-card-studio {
+    background: #121417;
+    border: 1px solid #1f2226;
+    border-radius: 4px;
+    padding: 20px;
+    height: 100%;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .svc-card-studio:hover {
+    border-color: #206bc4;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .icon-box-azure {
+    width: 40px;
+    height: 40px;
+    background: rgba(32, 107, 196, 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #206bc4;
+    font-size: 1.5rem;
+  }
+
+  .status-indicator-lite {
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .online .status-indicator-lite {
+    background: rgba(47, 179, 68, 0.15);
+    color: #2fb344;
+  }
+
+  .offline .status-indicator-lite {
+    background: rgba(214, 57, 57, 0.15);
+    color: #d63939;
+  }
+
+  /* 📊 TABLE STUDIO */
+  .tech-card-container {
+    background: #121417;
+    border: 1px solid #1f2226;
+    border-radius: 4px;
+  }
+
+  .tech-card-header {
+    border-bottom: 1px solid #1f2226;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .table-studio {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+  }
+
+  .table-studio thead th {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 15px 10px;
+    border-bottom: 1px solid #1f2226;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .table-studio tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    transition: 0.1s;
+  }
+
+  .table-studio tbody tr:hover {
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  .table-studio td {
+    padding: 14px 10px;
+    font-size: 0.85rem;
+    vertical-align: middle;
+  }
+
+  .badge-status-tech {
+    padding: 4px 12px;
+    border-radius: 2px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .active-label {
+    background: rgba(47, 179, 68, 0.1);
+    color: #2fb344;
+    border: 1px solid rgba(47, 179, 68, 0.2);
+  }
+
+  .failed-label {
+    background: rgba(214, 57, 57, 0.1);
+    color: #d63939;
+    border: 1px solid rgba(214, 57, 57, 0.2);
+  }
+
+  /* 🔘 UTILS */
+  .btn-tech-outline {
+    background: transparent;
+    border: 1px solid #2a2e33;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .btn-tech-outline:hover {
+    background: #206bc4;
+    border-color: #206bc4;
+  }
+
+  .btn-restart-small {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+  }
+
+  .btn-restart-small:hover {
+    background: #ffc107;
+    color: #000;
+  }
+
+  .badge-tech {
+    background: #1f2226;
+    color: #444;
+    font-size: 0.6rem;
+    font-weight: 900;
+    padding: 4px 10px;
+    border-radius: 2px;
+  }
+
+  .extra-small {
+    font-size: 0.7rem;
+  }
+
+  .rotate {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const tableBody = document.getElementById('linuxServicesBody');
+    const refreshBtn = document.getElementById('btnRefreshAll');
+
+    async function safeFetch(url) {
+      try {
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        console.error(`[Fetch Error] ${url}:`, e);
+        return null;
+      }
+    }
+
+    // --- CAPA 1: APLICACIÓN ---
+    async function updateAppLayer() {
+      const data = await safeFetch('/api/system/components-status');
+      if (!data) return;
+
+      const updateCard = (id, connected, extraText = null) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = `svc-card-studio ${connected ? 'online' : 'offline'}`;
+        el.querySelector('.status-indicator-lite').textContent = connected ? 'ONLINE' : 'ERROR';
+        if (extraText) {
+          const sub = el.querySelector('.text-secondary-50');
+          if (sub) sub.textContent = extraText;
+        }
+      };
+
+      updateCard('svc-backend', data.backend?.connected);
+      updateCard('svc-frontend', data.frontend?.connected);
+      updateCard('svc-printer', data.printer?.connected, data.printer?.connected ? 'LISTO PARA TICKET' : 'NO DETECTADA');
+      updateCard('svc-hdmi', data.hdmi?.connected, data.hdmi?.resolution || (data.hdmi?.connected ? 'MODO HDMI ACTIVO' : 'SIN SEÑAL'));
+      updateCard('svc-gpio', data.gpio?.connected, data.gpio?.connected ? 'PIGPIOD READY' : 'INTERFAZ DOWN');
+    }
+
+    // --- CAPA 2: SISTEMA ---
+    async function updateSystemLayer() {
+      const data = await safeFetch('/api/system/services');
+      if (!data || !data.services) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger small">Error: No se recibió respuesta del servidor de servicios.</td></tr>';
+        return;
+      }
+
+      const lines = data.services.split('\n').filter(l => l.trim() && l.includes('.service'));
+      if (lines.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary small">No se encontraron servicios activos en el sistema.</td></tr>';
+        return;
+      }
+
+      tableBody.innerHTML = '';
+
+      lines.slice(0, 50).forEach(line => {
+        // Limpiar la línea y dividir por espacios (respetando múltiples espacios)
+        const parts = line.trim().split(/\s+/);
+
+        // Unidades de systemctl list-units --all típicamente tienen:
+        // [●] unit load active sub description...
+        let startIndex = 0;
+        if (parts[0] === '●' || parts[0] === '*' || parts[0] === '.') startIndex = 1;
+
+        if (parts.length >= startIndex + 5) {
+          const unit = parts[startIndex];
+          const load = parts[startIndex + 1];
+          const active = parts[startIndex + 2];
+          const sub = parts[startIndex + 3];
+          const desc = parts.slice(startIndex + 4).join(' ');
+
+          const isActive = active === 'active';
+          const row = document.createElement('tr');
+          row.innerHTML = `
+                    <td class="ps-4">
+                        <div class="fw-bold text-white small">${unit}</div>
+                        <div class="text-secondary-50 extra-small">${desc.substring(0, 60)}...</div>
+                    </td>
+                    <td class="text-center font-monospace extra-small text-secondary">${load.toUpperCase()}</td>
+                    <td class="text-center">
+                        <span class="badge-status-tech ${isActive ? 'active-label' : 'failed-label'}">${active}</span>
+                    </td>
+                    <td class="text-center"><span class="text-white-50 extra-small">${sub}</span></td>
+                    <td class="text-end pe-4">
+                        <button class="btn-restart-small" onclick="restartUnit('${unit}')">
+                            <i class="ti ti-rotate"></i>
+                        </button>
+                    </td>
+                `;
+          tableBody.appendChild(row);
+        }
+      });
+    }
+
+    window.restartUnit = async (name) => {
+      const btn = event.currentTarget;
+      const icon = btn.querySelector('i');
+      icon.classList.add('rotate');
+      await fetch(`/api/system/service/${name}/restart`, { method: 'POST' });
+      setTimeout(() => { icon.classList.remove('rotate'); refreshLayerAll(); }, 2000);
+    };
+
+    async function refreshLayerAll() {
+      if (!refreshBtn) return;
+      const icon = refreshBtn.querySelector('i');
+      if (icon) icon.classList.add('rotate');
+
+      try {
+        await Promise.all([updateAppLayer(), updateSystemLayer()]);
+      } catch (e) {
+        console.error("Error refreshing layers:", e);
+      } finally {
+        if (icon) setTimeout(() => icon.classList.remove('rotate'), 600);
+      }
+    }
+
+    // Inicializar
+    refreshBtn.addEventListener('click', () => {
+      console.log("Refrescar clickeado manualmente");
+      refreshLayerAll();
+    });
+
+    // Carga inicial
+    document.addEventListener('DOMContentLoaded', refreshLayerAll);
+    refreshLayerAll();
+
+    // Auto-refresh
+    setInterval(refreshLayerAll, 30000);
+  })();
+</script>

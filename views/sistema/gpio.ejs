@@ -1,0 +1,320 @@
+<div class="container-fluid py-4 animate-in fade-in duration-500">
+
+  <!-- HEADER -->
+  <div class="row align-items-end mb-4">
+    <div class="col">
+      <div class="text-uppercase tracking-widest text-secondary small fw-bold mb-1">Hardware Interface</div>
+      <h2 class="text-white fw-bold m-0 d-flex align-items-center gap-3">
+        <div class="icon-square-lg bg-green-lt text-green rounded-3 d-flex align-items-center justify-content-center"
+          style="width: 48px; height: 48px;">
+          <i class="ti ti-circuit-board fs-2"></i>
+        </div>
+        <span>Centro <span class="text-green">GPIO</span></span>
+      </h2>
+    </div>
+
+  </div>
+
+  <div class="row g-4">
+    <!-- PI VISUALIZATION (LEFT) - Clean, No Border -->
+    <div class="col-xl-8 d-flex align-items-center justify-content-center" style="min-height: 500px;">
+
+      <!-- Pi Container - Floating -->
+      <div class="pi-container position-relative">
+        <img src="/img/pi3.png" alt="Raspberry Pi" class="pi-image shadow-lg">
+
+        <!-- Nodes -->
+        <div id="pins-overlay">
+          <% gpioPins.forEach((pin, index)=> { %>
+            <div id="gpio-node-<%= pin.id %>" class="pin-node" style="--angle: <%= index * 90 %>deg;">
+              <div class="pin-label text-uppercase small fw-bold">GPIO <%= pin.id %>
+              </div>
+              <div class="pin-led off" id="led-<%= pin.id %>"></div>
+              <div class="pin-action text-info small">
+                <%= pName(pin.action) %>
+              </div>
+            </div>
+            <% }); %>
+        </div>
+
+        <!-- Status Indicators (Floating below) -->
+        <div
+          class="position-absolute bottom-0 start-50 translate-middle-x mb-n5 d-flex gap-4 p-3 rounded-pill bg-black-20 backdrop-blur border border-white-5">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success dot"></span> <span
+              class="small text-secondary fw-bold text-uppercase">Online</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-info dot pulse"></span> <span
+              class="small text-secondary fw-bold text-uppercase">Listening</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: CONTROLS & LOGS -->
+    <div class="col-xl-4 d-flex flex-column gap-3">
+
+      <!-- 1. DEBOUNCE SETTINGS (Now on Right) -->
+      <div class="card tech-card border-0">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <label class="form-label text-white small fw-bold text-uppercase m-0">
+              <i class="ti ti-settings me-1 text-secondary"></i> Rebote (Debounce)
+            </label>
+            <span id="debounceVal" class="text-green fw-bold font-monospace">50ms</span>
+          </div>
+
+          <input type="range" class="form-range mb-3" id="debounceRange" min="10" max="500" step="10" value="50">
+
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-secondary" style="font-size: 0.7rem">Ajuste para evitar dobles pulsaciones.</small>
+            <button id="btnSaveDebounce" class="btn btn-sm btn-outline-success">
+              <i class="ti ti-device-floppy me-1"></i> Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. LOG MONITOR -->
+      <div class="card tech-card border-0 flex-grow-1">
+        <div class="card-header border-0 bg-transparent py-3">
+          <h4 class="card-title text-light mb-0 fw-bold small text-uppercase">
+            <i class="ti ti-activity me-2 text-secondary"></i> Monitor de Eventos
+          </h4>
+        </div>
+        <div class="card-body p-0 custom-scroll overflow-auto" style="max-height: 400px;">
+          <div id="gpio-log" class="timeline p-3">
+            <div class="text-center py-5 text-secondary small opacity-50">Esperando pulsaciones...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<% function pName(action) { const names={ 'emit_ticket' : 'Ticket' , 'next_turn' : 'Siguiente' , 'prev_turn' : 'Atrás'
+  , 'led' : 'Estado' }; return names[action] || action; } %>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const logBox = document.getElementById('gpio-log');
+      const socket = io();
+
+      // Debounce Logic
+      const dRange = document.getElementById('debounceRange');
+      const dVal = document.getElementById('debounceVal');
+      const dBtn = document.getElementById('btnSaveDebounce');
+
+      dRange.oninput = () => dVal.textContent = dRange.value + 'ms';
+
+      // Load setting
+      fetch('/api/gpio/settings').then(r => r.json()).then(d => {
+        if (d.debounce) {
+          dRange.value = d.debounce;
+          dVal.textContent = d.debounce + 'ms';
+        }
+      });
+
+      dBtn.onclick = async () => {
+        const original = dBtn.innerHTML;
+        dBtn.innerHTML = '<i class="ti ti-loader rotate"></i>';
+
+        try {
+          const res = await fetch('/api/gpio/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ debounce: dRange.value })
+          });
+          if (res.ok) {
+            dBtn.innerHTML = '<i class="ti ti-check"></i>';
+            setTimeout(() => dBtn.innerHTML = original, 1500);
+          }
+        } catch (e) { dBtn.innerHTML = 'Error'; }
+      };
+
+      // UI Updates
+      function addLog(msg, type = 'info') {
+        const div = document.createElement('div');
+        div.className = 'timeline-event mb-2 p-2 bg-black-20 rounded border-start border-2 border-' + (type === 'high' ? 'success' : 'secondary');
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold text-white small" style="font-size:0.8rem;">${msg}</span>
+                <span class="text-secondary mono" style="font-size: 0.65rem">${new Date().toLocaleTimeString()}</span>
+            </div>
+        `;
+        if (logBox.innerText.includes('Esperando')) logBox.innerHTML = '';
+        logBox.prepend(div);
+        if (logBox.children.length > 20) logBox.lastElementChild.remove();
+      }
+
+      async function loadGPIO() {
+        try {
+          const res = await fetch('/api/gpio/status');
+          const data = await res.json();
+          if (data.pins) data.pins.forEach(p => updatePinUI(p.id, p.value));
+        } catch (e) { console.error(e); }
+      }
+
+      function updatePinUI(pinId, value) {
+        const node = document.getElementById(`gpio-node-${pinId}`);
+        const led = document.getElementById(`led-${pinId}`);
+        if (!node || !led) return;
+
+        const isHigh = value === 1;
+        led.className = `pin-led ${isHigh ? 'on' : 'off'}`;
+        node.classList.toggle('active', isHigh);
+
+        if (isHigh) {
+          node.animate([
+            { transform: 'translateY(-10px) scale(1.1)', boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)' },
+            { transform: 'translateY(0) scale(1)', boxShadow: 'none' }
+          ], { duration: 300, easing: 'ease-out' });
+        }
+      }
+
+      socket.on('gpio-update', data => {
+        updatePinUI(data.pin, data.value);
+        if (data.value === 1) addLog(`Sensor GPIO ${data.pin} Activado`, 'high');
+      });
+
+      document.getElementById('btnRefresh').onclick = loadGPIO;
+      loadGPIO();
+    });
+  </script>
+
+  <style>
+    /* Clean UI Overrides */
+    .tech-card {
+      background: #121417;
+      border: 1px solid #2a2e33;
+      border-radius: 12px;
+    }
+
+    .bg-black-20 {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .backdrop-blur {
+      backdrop-filter: blur(8px);
+    }
+
+    .border-white-5 {
+      border-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Pi Nodes */
+    .pi-image {
+      max-width: 100%;
+      width: 450px;
+      filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.5));
+      z-index: 5;
+    }
+
+    .pi-container {
+      padding: 40px;
+    }
+
+    .pin-node {
+      position: absolute;
+      background: rgba(18, 20, 24, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      min-width: 100px;
+      transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    }
+
+    .pin-node.active {
+      background: #064e3b;
+      border-color: #10b981;
+      color: white;
+    }
+
+    /* Right-side aligned nodes */
+    #gpio-node-17 {
+      top: 15%;
+      right: -140px;
+    }
+
+    #gpio-node-22 {
+      top: 35%;
+      right: -140px;
+    }
+
+    #gpio-node-27 {
+      top: 55%;
+      right: -140px;
+    }
+
+    #gpio-node-23 {
+      top: 75%;
+      right: -140px;
+    }
+
+    .pin-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin: 6px auto;
+      background: #334155;
+      transition: 0.2s;
+    }
+
+    .pin-led.on {
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+
+    .text-green {
+      color: #2fb344 !important;
+    }
+
+    .bg-green-lt {
+      background: rgba(47, 179, 68, 0.1);
+    }
+
+    .badge.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      padding: 0;
+    }
+
+    .pulse {
+      animation: dotPulse 1.5s infinite;
+    }
+
+    @keyframes dotPulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    /* Scroll */
+    .custom-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 2px;
+    }
+  </style>

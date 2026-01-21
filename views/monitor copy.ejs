@@ -1,0 +1,219 @@
+<!--
+  File: /home/fgonzalez/turnito/views/monitor.ejs
+  Descripción: Pantalla pública con doble panel (turnos + publicidad)
+  Versión: 4.2 - Integrada con Socket.IO y rutas públicas
+  Autor: Flavio González - Infratec Networks (Uruguay, 2025)
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turnito Display</title>
+  <link rel="stylesheet" href="/css/tabler-dark.min.css">
+  <link rel="stylesheet" href="/icons/tabler-icons.min.css">
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Panel Turnos */
+    .turn-panel {
+      width: 65%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #0d1117;
+      box-shadow: inset -2px 0 10px #0008;
+      text-align: center;
+      position: relative;
+    }
+    .turn-label {
+      font-size: 1.5rem;
+      color: #00bfff;
+      margin-bottom: 10px;
+    }
+    .turn-number {
+      font-size: 10rem;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 40px #00bfff88;
+      transition: transform 0.3s ease;
+    }
+    .queue-name {
+      font-size: 2rem;
+      color: #ccc;
+      margin-top: 10px;
+    }
+    .fade-in {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Panel Publicidad */
+    .ad-panel {
+      width: 35%;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+    .ad-panel img {
+      width: 100%;
+      height: 100vh;
+      object-fit: cover;
+      position: absolute;
+      top: 0; left: 0;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .ad-panel img.active { opacity: 1; }
+
+    /* Reloj */
+    .clock {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 1.5rem;
+      color: #00bfff;
+      text-shadow: 0 0 10px #00bfff66;
+    }
+
+    /* Barra inferior */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      width: 65%;
+      background: #000;
+      text-align: center;
+      padding: 8px 0;
+      color: #ccc;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Panel Turnos -->
+    <div class="turn-panel">
+      <div class="turn-label"><i class="ti ti-bell"></i> Turno actual</div>
+      <h1 id="turnNumber" class="turn-number">--</h1>
+      <div id="queueName" class="queue-name">Cargando...</div>
+      <audio id="turnSound" src="/media/chime.mp3" preload="auto"></audio>
+      <div class="bottom-bar">Últimos turnos: <span id="lastTurns">—</span></div>
+    </div>
+
+    <!-- Panel Publicidad -->
+    <div class="ad-panel">
+      <div id="clock" class="clock">--:--:--</div>
+      <img src="/media/publi1.jpg" class="active" alt="Publicidad 1">
+      <img src="/media/publi2.jpg" alt="Publicidad 2">
+      <img src="/media/publi3.jpg" alt="Publicidad 3">
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const turnNum = document.getElementById('turnNumber');
+    const queueName = document.getElementById('queueName');
+    const sound = document.getElementById('turnSound');
+    const lastTurnsEl = document.getElementById('lastTurns');
+    const clockEl = document.getElementById('clock');
+    const ads = document.querySelectorAll('.ad-panel img');
+
+    let lastShown = { queue: null, turn: null };
+    let queueIndex = 0;
+    let queues = [];
+    let adIndex = 0;
+
+    // ⏰ Reloj
+    function updateClock() {
+      const d = new Date();
+      clockEl.textContent = d.toLocaleTimeString('es-ES', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 🎞 Rotador de anuncios
+    function rotateAds() {
+      ads[adIndex].classList.remove('active');
+      adIndex = (adIndex + 1) % ads.length;
+      ads[adIndex].classList.add('active');
+    }
+    setInterval(rotateAds, 8000);
+
+    async function getJSON(url) {
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        return JSON.parse(text);
+      } catch {
+        return {};
+      }
+    }
+
+    // 🔁 Actualizar turno actual
+    async function fetchTurn() {
+      try {
+        if (!queues.length) queues = await getJSON('/public/queues');
+        if (!queues.length) {
+          queueName.textContent = 'Sin colas registradas';
+          return;
+        }
+
+        const activeQueue = queues[queueIndex % queues.length];
+        const turns = await getJSON(`/public/queues/${activeQueue.id}/turns`);
+        const current = turns.find(t => t.status === 'calling');
+        const lastCalled = turns
+          .filter(t => t.status === 'completed' || t.status === 'skipped')
+          .slice(-5);
+
+        if (current && (current.turn_number !== lastShown.turn || activeQueue.name !== lastShown.queue)) {
+          lastShown = { queue: activeQueue.name, turn: current.turn_number };
+          turnNum.textContent = current.turn_number;
+          queueName.textContent = activeQueue.name;
+          turnNum.classList.add('fade-in');
+          sound.currentTime = 0;
+          sound.play().catch(()=>{});
+          setTimeout(() => turnNum.classList.remove('fade-in'), 700);
+        }
+
+        lastTurnsEl.textContent =
+          lastCalled.map(t => `${activeQueue.name}: ${t.turn_number}`).join(' | ') || '—';
+        queueIndex++;
+      } catch (err) {
+        queueName.textContent = 'Error cargando datos';
+      }
+    }
+
+    // 🔄 Polling inicial
+    fetchTurn();
+    setInterval(fetchTurn, 5000);
+
+    // ⚡ Socket.IO para actualización instantánea
+    const socket = io();
+    socket.on('connect', () => console.log('🔌 Monitor conectado vía Socket.IO'));
+    socket.on('turn-update', data => {
+      console.log('📢 Nuevo turno recibido:', data);
+      fetchTurn(); // Refresca inmediatamente
+    });
+  });
+  </script>
+</body>
+</html>

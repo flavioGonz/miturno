@@ -1,0 +1,547 @@
+<!--
+  File: /views/sistema/publicidad.ejs
+  Descripción: Gestión de Publicidad - Diseño Inmersivo (v6.0)
+-->
+
+<div class="immersive-wrapper animate-in fade-in duration-500">
+
+  <!-- 📽️ STAGE (PREVIEW CENTER) -->
+  <div class="monitor-stage">
+    <div class="stage-header">
+      <div class="d-flex align-items-center gap-3">
+        <i class="ti ti-photo-edit text-azure fs-2"></i>
+        <div>
+          <div class="text-uppercase tracking-widest small text-muted fw-bold">Gestor de Medios</div>
+          <h2 class="m-0 fw-bold text-white">Publicidad Monitor 1</h2>
+        </div>
+      </div>
+      <div class="live-indicator">
+        <span class="pulse-dot"></span> EN VIVO
+      </div>
+    </div>
+
+    <!-- IFRAME CONTAINER -->
+    <div class="preview-frame-container">
+      <iframe id="adsPreview" src="/monitor?id=1" class="monitor-iframe"></iframe>
+
+      <!-- REFRESH OVERLAY BTN -->
+      <button id="btnRefreshPreview" class="btn-float-refresh" title="Refrescar Vista">
+        <i class="ti ti-refresh"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- 🎛️ FLOATING CONTROLS PANEL -->
+  <div class="controls-panel">
+
+    <!-- HEADER PANEL -->
+    <div class="panel-section">
+      <h5 class="panel-title mb-3">Configuración de Pantalla</h5>
+
+      <!-- Toggles Visibility -->
+      <div class="d-flex flex-column gap-2 mb-4">
+        <label class="toggle-row">
+          <span class="d-flex align-items-center gap-2">
+            <i class="ti ti-cloud text-secondary"></i> Mostrar Clima
+          </span>
+          <input type="checkbox" id="toggleWeather">
+          <span class="slider round"></span>
+        </label>
+
+        <label class="toggle-row">
+          <span class="d-flex align-items-center gap-2">
+            <i class="ti ti-news text-secondary"></i> Mostrar Noticias
+          </span>
+          <input type="checkbox" id="toggleNews">
+          <span class="slider round"></span>
+        </label>
+        <div class="form-text small text-azure fst-italic mt-1">
+          <i class="ti ti-info-circle"></i> Desactiva para pantalla completa.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- UPLOAD SECTION -->
+    <div class="panel-section">
+      <h5 class="panel-title mb-3">Subir Contenido</h5>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <div class="upload-box mb-3" onclick="document.getElementById('fileInput').click()">
+          <i class="ti ti-cloud-upload fs-1 text-muted mb-2"></i>
+          <span class="small text-muted">Click para seleccionar</span>
+          <input type="file" id="fileInput" name="adFile" accept=".jpg,.jpeg,.png,.gif" hidden>
+        </div>
+        <button type="submit" class="btn-azure-block w-100">
+          <i class="ti ti-upload"></i> Subir
+        </button>
+      </form>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- SETTINGS SECTION -->
+    <div class="panel-section">
+      <h5 class="panel-title mb-2">Rotación</h5>
+      <div class="d-flex gap-2">
+        <input type="number" id="intervalInput" class="dark-input form-control" value="8" min="3" max="60">
+        <button id="saveInterval" class="btn-icon-square" title="Guardar">
+          <i class="ti ti-check"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- GALLERY LIST -->
+    <div class="panel-section flex-grow-1 d-flex flex-column" style="min-height: 200px;">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="panel-title m-0">Galería Activa</h5>
+        <button id="btnReloadList" class="btn-xs-text"><i class="ti ti-refresh"></i></button>
+      </div>
+      <div id="adsList" class="gallery-scroll">
+        <!-- JS Loaded -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* LAYOUT */
+  .immersive-wrapper {
+    display: flex;
+    height: calc(100vh - 80px);
+    /* Adjust based on main layout header if any */
+    background: #000;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* STAGE LEFT */
+  .monitor-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background: radial-gradient(circle at center, #151515 0%, #000 80%);
+    position: relative;
+    z-index: 1;
+  }
+
+  .stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #e53e3e;
+    background: rgba(229, 62, 62, 0.1);
+    padding: 5px 12px;
+    border-radius: 100px;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #e53e3e;
+    border-radius: 50%;
+    animation: pulse-red 2s infinite;
+  }
+
+  @keyframes pulse-red {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+    }
+
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 6px rgba(229, 62, 62, 0);
+    }
+
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+    }
+  }
+
+  .preview-frame-container {
+    flex: 1;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+    background: #000;
+  }
+
+  .monitor-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    transform-origin: top left;
+  }
+
+  .btn-float-refresh {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-float-refresh:hover {
+    background: #00d2ff;
+    border-color: #00d2ff;
+    color: #000;
+  }
+
+  /* CONTROLS RIGHT */
+  .controls-panel {
+    width: 380px;
+    background: #0a0a0a;
+    /* Darker panel */
+    border-left: 1px solid #1a1e22;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0;
+    z-index: 10;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .panel-section {
+    padding: 25px;
+  }
+
+  .panel-divider {
+    height: 1px;
+    background: #1a1e22;
+    margin: 0;
+  }
+
+  .panel-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6c757d;
+  }
+
+  /* TOGGLE SWITCH */
+  .toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 0;
+    font-size: 0.9rem;
+    color: #ccc;
+  }
+
+  .toggle-row input {
+    display: none;
+  }
+
+  .slider {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    background-color: #333;
+    transition: .4s;
+    border-radius: 34px;
+    display: inline-block;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  input:checked+.slider {
+    background-color: #206bc4;
+  }
+
+  input:checked+.slider:before {
+    transform: translateX(20px);
+  }
+
+  /* UPLOAD BOX */
+  .upload-box {
+    border: 2px dashed #333;
+    border-radius: 8px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .upload-box:hover {
+    border-color: #206bc4;
+    background: rgba(32, 107, 196, 0.05);
+  }
+
+  /* BUTTONS & INPUTS */
+  .btn-azure-block {
+    background: #206bc4;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 1px;
+  }
+
+  .btn-azure-block:hover {
+    background: #1a569d;
+  }
+
+  .dark-input {
+    background: #151515;
+    border: 1px solid #333;
+    color: #fff;
+  }
+
+  .dark-input:focus {
+    background: #151515;
+    border-color: #206bc4;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .btn-icon-square {
+    width: 40px;
+    background: #1a1e22;
+    border: 1px solid #333;
+    color: #2fb344;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: 0.2s;
+  }
+
+  .btn-icon-square:hover {
+    background: #2fb344;
+    color: #fff;
+  }
+
+  /* GALLERY */
+  .gallery-scroll {
+    overflow-y: auto;
+    padding-right: 5px;
+    max-height: 300px;
+  }
+
+  .gallery-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #151515;
+    border: 1px solid #222;
+    border-radius: 6px;
+  }
+
+  .gallery-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #333;
+  }
+
+  .gallery-meta {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .gallery-name {
+    font-size: 0.8rem;
+    color: #ddd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+
+  .btn-trash {
+    background: none;
+    border: none;
+    color: #555;
+    transition: 0.2s;
+  }
+
+  .btn-trash:hover {
+    color: #e53e3e;
+  }
+
+  .btn-xs-text {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 0.8rem;
+  }
+
+  .btn-xs-text:hover {
+    color: #fff;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Current Monitor ID (Assuming 1 for now as per user request)
+    const MONITOR_ID = 1;
+
+    const els = {
+      toggleWeather: document.getElementById('toggleWeather'),
+      toggleNews: document.getElementById('toggleNews'),
+      adsList: document.getElementById('adsList'),
+      iframe: document.getElementById('adsPreview'),
+      refreshBtn: document.getElementById('btnRefreshPreview'),
+      intervalInput: document.getElementById('intervalInput'),
+      saveInterval: document.getElementById('saveInterval')
+    };
+
+    // 1. Load Monitor Config (For toggles)
+    async function loadMonitorConfig() {
+      try {
+        const res = await fetch(`/api/monitors/${MONITOR_ID}`);
+        if (res.ok) {
+          const cfg = await res.json();
+          els.toggleWeather.checked = !!cfg.show_weather;
+          els.toggleNews.checked = !!cfg.show_news;
+        }
+      } catch (e) { console.error("Error loading monitor config", e); }
+    }
+
+    // 2. Save Config Logic
+    async function updateMonitorConfig() {
+      try {
+        // Need to fetch current first to not lose other data? Or just send partial update if API supports it?
+        // The API implementation in index.js performs an UPDATE with all fields.
+        // We really should fetch current state first to be safe, as the PUT endpoint expects all fields.
+        const res = await fetch(`/api/monitors/${MONITOR_ID}`);
+        const current = await res.json();
+
+        const payload = {
+          ...current,
+          show_weather: els.toggleWeather.checked,
+          show_news: els.toggleNews.checked
+        };
+
+        const putRes = await fetch(`/api/monitors/${MONITOR_ID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (putRes.ok) {
+          reloadPreview();
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    els.toggleWeather.addEventListener('change', updateMonitorConfig);
+    els.toggleNews.addEventListener('change', updateMonitorConfig);
+
+    // 3. Media Logic
+    const loadAds = async () => {
+      const res = await fetch('/api/ads');
+      const data = await res.json();
+      els.adsList.innerHTML = '';
+
+      if (!data.files?.length) {
+        els.adsList.innerHTML = '<div class="text-muted small p-3 text-center">Sin archivos</div>';
+      } else {
+        data.files.forEach(file => {
+          const div = document.createElement('div');
+          div.className = 'gallery-item';
+          div.innerHTML = `
+            <img src="/media/${file}" class="gallery-thumb">
+            <div class="gallery-meta">
+              <span class="gallery-name" title="${file}">${file}</span>
+            </div>
+            <button class="btn-trash"><i class="ti ti-trash"></i></button>
+          `;
+          div.querySelector('.btn-trash').onclick = async () => {
+            if (confirm('¿Borrar?')) {
+              await fetch(`/api/ads/${file}`, { method: 'DELETE' });
+              loadAds();
+            }
+          };
+          els.adsList.appendChild(div);
+        });
+      }
+      if (data.interval) els.intervalInput.value = data.interval;
+    };
+
+    // Upload
+    const form = document.getElementById('uploadForm');
+    document.getElementById('fileInput').onchange = () => {
+      if (document.getElementById('fileInput').files.length > 0) form.requestSubmit();
+    };
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const res = await fetch('/api/ads', { method: 'POST', body: fd });
+      if (res.ok) { loadAds(); form.reset(); }
+    };
+
+    // Interval
+    els.saveInterval.onclick = async () => {
+      await fetch('/api/ads/interval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interval: els.intervalInput.value })
+      });
+      // alert?
+      reloadPreview();
+    };
+
+    // Utils
+    function reloadPreview() {
+      els.iframe.src = els.iframe.src; // refresh iframe
+    }
+    els.refreshBtn.onclick = reloadPreview;
+    document.getElementById('btnReloadList').onclick = loadAds;
+
+    // Init
+    loadMonitorConfig();
+    loadAds();
+  });
+</script>

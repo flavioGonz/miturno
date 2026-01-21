@@ -1,0 +1,592 @@
+<div id="canvas-container"
+    style="width: 100%; height: 100vh; position: relative; background: transparent; overflow: hidden;">
+    <svg id="canvas" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <!-- Capa de Conexiones -->
+        <g id="connections-layer"></g>
+        <!-- Capa de Partículas -->
+        <g id="particles-layer"></g>
+        <!-- Capa de Nodos -->
+        <g id="nodes-layer"></g>
+        <!-- Capa de Tooltips GPIO -->
+        <g id="tooltips-layer"></g>
+    </svg>
+
+    <!-- Overlays en las esquinas -->
+    <div class="dash-overlay top-left">
+        <div class="badge bg-dark border border-secondary p-2 shadow-lg">
+            <i class="ti ti-activity text-success me-1"></i> Sistema Live
+        </div>
+    </div>
+    <div class="dash-overlay top-right">
+        <div id="server-time" class="badge bg-dark border border-secondary p-2 shadow-lg">--:--:--</div>
+    </div>
+    <div class="dash-overlay bottom-right">
+        <div class="ui-bottom-right">
+            <div id="event-log">
+                <div class="text-secondary italic">Esperando actividad...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .node {
+        cursor: pointer;
+    }
+
+    .node image,
+    .node .web-frame-group {
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform-origin: center;
+    }
+
+    /* Animación de Bounce al hacer hover */
+    .node:hover image,
+    .node:hover .web-frame-group {
+        animation: bounce 0.5s ease infinite alternate;
+    }
+
+    @keyframes bounce {
+        from {
+            transform: translateY(0);
+        }
+
+        to {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* Estados de conexión visualizados como resplandor en la imagen */
+    .node-connected image,
+    .node-connected .web-frame-rect {
+        filter: drop-shadow(0 0 15px rgba(34, 197, 94, 0.6)) brightness(1.1);
+    }
+
+    .node-disconnected image,
+    .node-disconnected .web-frame-rect {
+        filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.6));
+        animation: pulse-glow-red 2s infinite;
+    }
+
+    @keyframes pulse-glow-red {
+
+        0%,
+        100% {
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.4));
+            opacity: 1;
+        }
+
+        50% {
+            filter: drop-shadow(0 0 25px rgba(239, 68, 68, 0.8));
+            opacity: 0.8;
+        }
+    }
+
+    .node-text {
+        fill: white;
+        font-size: 14px;
+        font-weight: 700;
+        text-anchor: middle;
+        pointer-events: none;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .node-subtext {
+        fill: rgba(255, 255, 255, 0.6);
+        font-size: 11px;
+        text-anchor: middle;
+        pointer-events: none;
+    }
+
+    .node-info {
+        fill: #00ff99;
+        font-size: 11px;
+        font-weight: 800;
+        text-anchor: middle;
+        pointer-events: none;
+    }
+
+    .connection-line {
+        stroke-width: 3;
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.1);
+        transition: all 0.5s ease;
+    }
+
+    .connection-line.connected {
+        stroke: rgba(34, 197, 94, 0.3);
+        stroke-dasharray: 5, 5;
+        animation: flow-line 1s linear infinite;
+    }
+
+    @keyframes flow-line {
+        to {
+            stroke-dashoffset: -20;
+        }
+    }
+
+    .connection-line.disconnected {
+        stroke: rgba(239, 68, 68, 0.2);
+    }
+
+    .event-particle {
+        r: 6;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+
+    .ui-bottom-right {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 15px;
+        width: 280px;
+        pointer-events: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .dash-overlay {
+        position: absolute;
+        padding: 20px;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .top-left {
+        top: 0;
+        left: 0;
+    }
+
+    .top-right {
+        top: 0;
+        right: 0;
+    }
+
+    #event-log {
+        font-size: 11px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .log-item {
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        animation: slideInRight 0.3s ease;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    /* Estilos para el Tooltip Animado */
+    .animated-tooltip {
+        pointer-events: none;
+        animation: tooltip-float 1.5s ease-out forwards;
+    }
+
+    .tooltip-bg {
+        fill: rgba(0, 0, 0, 0.85);
+        stroke: #3b82f6;
+        stroke-width: 1.5;
+        rx: 10;
+    }
+
+    .tooltip-text {
+        fill: white;
+        font-size: 12px;
+        font-weight: bold;
+        text-anchor: middle;
+    }
+
+    @keyframes tooltip-float {
+        0% {
+            transform: translateY(0) scale(0.5);
+            opacity: 0;
+        }
+
+        20% {
+            transform: translateY(-20px) scale(1.1);
+            opacity: 1;
+        }
+
+        80% {
+            transform: translateY(-40px) scale(1);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(-60px) scale(0.9);
+            opacity: 0;
+        }
+    }
+
+    /* Estilos Frame de Navegador */
+    .web-frame-rect {
+        fill: #0f172a;
+        /* Fondo más oscuro estilo dashboard */
+        stroke: #334155;
+        stroke-width: 2;
+        rx: 8;
+    }
+
+    .web-frame-header {
+        fill: #334155;
+        rx: 8;
+    }
+
+    .web-turn-number {
+        fill: #00ff99;
+        font-size: 60px;
+        /* Mas grande */
+        font-weight: 900;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        font-family: 'monospace';
+        text-shadow: 0 0 15px rgba(0, 255, 153, 0.7);
+    }
+</style>
+
+<script>
+    (function () {
+        const svg = document.getElementById('canvas');
+        const nodesLayer = document.getElementById('nodes-layer');
+        const connectionsLayer = document.getElementById('connections-layer');
+        const particlesLayer = document.getElementById('particles-layer');
+        const tooltipsLayer = document.getElementById('tooltips-layer');
+        const container = document.getElementById('canvas-container');
+
+        const config = {
+            centerX: container.clientWidth / 2,
+            centerY: container.clientHeight / 2,
+            orbitRadius: Math.min(container.clientWidth, container.clientHeight) * 0.35,
+            nodeSize: 200,
+            piSize: 200,
+            logoSize: 70
+        };
+
+        const nodesList = [
+            { id: 'backend', label: 'Backend Server', sub: 'Hub Central', icon: '/img/pi3.png', type: 'pi' },
+            { id: 'frontend', label: 'Monitor Web', sub: 'Interface 3000', type: 'node', angle: -140, isWeb: true, scale: 0.7 },
+            { id: 'hdmi', label: 'Salida HDMI', sub: 'Visualización Local', icon: '/img/monitor.png', type: 'node', angle: -40 },
+            { id: 'printer', label: 'Impresora Térmica', sub: 'Tickets POS', icon: '/img/impresora-pos.png', type: 'node', angle: 40 },
+            { id: 'gpio', label: 'Pulsadores', sub: 'Control GPIO', icon: '/img/pulsador-atras.png', type: 'node', angle: 140, scale: 0.5 }
+        ];
+
+        const connectionsList = [
+            { from: 'backend', to: 'frontend' },
+            { from: 'backend', to: 'hdmi' },
+            { from: 'backend', to: 'printer' },
+            { from: 'backend', to: 'gpio' }
+        ];
+
+        function init() {
+            render();
+            startPolling();
+            setupSocket();
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Fetch inicial de turnos
+            updateTurnDisplay();
+        }
+
+        function updateTime() {
+            const el = document.getElementById('server-time');
+            if (el) el.textContent = new Date().toLocaleTimeString();
+        }
+
+        function render() {
+            nodesLayer.innerHTML = '';
+            connectionsLayer.innerHTML = '';
+
+            nodesList.forEach(node => {
+                const scale = node.scale || 1;
+                if (node.type === 'pi') {
+                    node.posX = config.centerX;
+                    node.posY = config.centerY;
+                } else {
+                    const rad = node.angle * (Math.PI / 180);
+                    node.posX = config.centerX + Math.cos(rad) * config.orbitRadius;
+                    node.posY = config.centerY + Math.sin(rad) * config.orbitRadius;
+                }
+            });
+
+            connectionsList.forEach(conn => {
+                const start = nodesList.find(n => n.id === conn.from);
+                const end = nodesList.find(n => n.id === conn.to);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                line.setAttribute('d', `M ${start.posX} ${start.posY} L ${end.posX} ${end.posY}`);
+                line.setAttribute('class', 'connection-line');
+                line.setAttribute('id', `line-${conn.to}`);
+                connectionsLayer.appendChild(line);
+            });
+
+            nodesList.forEach(node => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'node');
+                g.setAttribute('id', `node-${node.id}`);
+                g.setAttribute('transform', `translate(${node.posX}, ${node.posY})`);
+
+                const scale = node.scale || 1;
+                const baseSize = (node.type === 'pi') ? config.piSize : config.nodeSize;
+                const size = baseSize * scale;
+
+                if (node.isWeb) {
+                    const webGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    webGroup.setAttribute('class', 'web-frame-group');
+
+                    const frameHeight = size * 0.8;
+                    const frame = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    frame.setAttribute('width', size);
+                    frame.setAttribute('height', frameHeight);
+                    frame.setAttribute('x', -size / 2);
+                    frame.setAttribute('y', -frameHeight / 2);
+                    frame.setAttribute('class', 'web-frame-rect');
+                    webGroup.appendChild(frame);
+
+                    const header = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    header.setAttribute('width', size);
+                    header.setAttribute('height', 20);
+                    header.setAttribute('x', -size / 2);
+                    header.setAttribute('y', -frameHeight / 2);
+                    header.setAttribute('class', 'web-frame-header');
+                    webGroup.appendChild(header);
+
+                    // Botones de browser
+                    [-size / 2 + 15, -size / 2 + 30, -size / 2 + 45].forEach((cx, i) => {
+                        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        dot.setAttribute('cx', cx);
+                        dot.setAttribute('cy', -frameHeight / 2 + 10);
+                        dot.setAttribute('r', 3);
+                        dot.setAttribute('fill', i === 0 ? '#ff5f56' : i === 1 ? '#ffbd2e' : '#27c93f');
+                        webGroup.appendChild(dot);
+                    });
+
+                    // Numero de turno centrado en el frame
+                    const turnText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    turnText.setAttribute('y', 10); // Centrado vertical relativo al frame
+                    turnText.setAttribute('class', 'web-turn-number');
+                    turnText.setAttribute('id', 'web-live-turn');
+                    turnText.textContent = '--';
+                    webGroup.appendChild(turnText);
+
+                    g.appendChild(webGroup);
+                } else {
+                    const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                    img.setAttribute('href', node.icon);
+                    img.setAttribute('width', size);
+                    img.setAttribute('height', size);
+                    img.setAttribute('x', -size / 2);
+                    img.setAttribute('y', -size / 2);
+                    img.setAttribute('class', node.type === 'pi' ? 'pi-image' : 'node-image');
+                    g.appendChild(img);
+
+                    if (node.type === 'pi') {
+                        const logo = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                        logo.setAttribute('href', '/img/logo.png');
+                        logo.setAttribute('width', config.logoSize);
+                        logo.setAttribute('height', config.logoSize);
+                        logo.setAttribute('x', -config.logoSize / 2);
+                        logo.setAttribute('y', -config.logoSize / 2 - 25);
+                        logo.setAttribute('class', 'logo-overlay');
+                        g.appendChild(logo);
+                    }
+                }
+
+                // Ajustar posicion de texto segun escala y tipo
+                const textY = (node.isWeb) ? (size * 0.45) : (size / 2) + 20;
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('y', textY);
+                text.setAttribute('class', 'node-text');
+                text.textContent = node.label;
+                g.appendChild(text);
+
+                const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                sub.setAttribute('y', textY + 15);
+                sub.setAttribute('class', 'node-subtext');
+                sub.textContent = node.sub;
+                g.appendChild(sub);
+
+                const info = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                info.setAttribute('y', textY + 35);
+                info.setAttribute('class', 'node-info');
+                info.setAttribute('id', `info-${node.id}`);
+                g.appendChild(info);
+
+                nodesLayer.appendChild(g);
+            });
+        }
+
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/system/components-status');
+                const status = await res.json();
+
+                Object.keys(status).forEach(id => {
+                    const nodeEl = document.getElementById(`node-${id}`);
+                    const lineEl = document.getElementById(`line-${id}`);
+                    const infoEl = document.getElementById(`info-${id}`);
+
+                    if (nodeEl) {
+                        nodeEl.classList.toggle('node-connected', status[id].connected);
+                        nodeEl.classList.toggle('node-disconnected', !status[id].connected);
+                    }
+                    if (lineEl) {
+                        lineEl.classList.toggle('connected', status[id].connected);
+                        lineEl.classList.toggle('disconnected', !status[id].connected);
+                    }
+                    if (infoEl) {
+                        let txt = "";
+                        if (id === 'hdmi') txt = status[id].connected ? (status[id].resolution || "HDMI OK") : "Desconectado";
+                        else if (id === 'printer') txt = status[id].connected ? "Lista" : "Offline";
+                        else if (id === 'frontend') txt = status[id].connected ? "Online" : "Offline";
+                        else if (id === 'gpio') txt = status[id].connected ? "OK" : "Error";
+                        infoEl.textContent = txt;
+                    }
+                });
+
+                updateTurnDisplay();
+
+            } catch (e) { console.error('Status fetch error', e); }
+        }
+
+        async function updateTurnDisplay() {
+            try {
+                const resQueues = await fetch('/api/queues/summary');
+                const queues = await resQueues.json();
+                if (queues.length > 0) {
+                    const currentTurn = queues[0].current_turn || '--';
+                    const turnEl = document.getElementById('web-live-turn');
+                    if (turnEl) turnEl.textContent = currentTurn;
+                }
+            } catch (e) { }
+        }
+
+        function spawnTooltip(nodeId, message, color = "#3b82f6") {
+            const node = nodesList.find(n => n.id === nodeId);
+            if (!node) return;
+
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'animated-tooltip');
+            g.setAttribute('transform', `translate(${node.posX}, ${node.posY - 100})`);
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            const textWidth = message.length * 8 + 20;
+            rect.setAttribute('width', textWidth);
+            rect.setAttribute('height', 30);
+            rect.setAttribute('x', -textWidth / 2);
+            rect.setAttribute('y', -15);
+            rect.setAttribute('class', 'tooltip-bg');
+            rect.style.stroke = color;
+            g.appendChild(rect);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('class', 'tooltip-text');
+            text.textContent = message;
+            g.appendChild(text);
+
+            tooltipsLayer.appendChild(g);
+            setTimeout(() => g.remove(), 1500);
+        }
+
+        function triggerEvent(targetId, type, label, tooltipMsg) {
+            const targetNode = nodesList.find(n => n.id === targetId);
+            const backendNode = nodesList.find(n => n.id === 'backend');
+            if (!targetNode) return;
+
+            if (tooltipMsg) {
+                spawnTooltip(targetId, tooltipMsg, type === 'gpio' ? '#f59e0b' : '#10b981');
+            }
+
+            const line = document.getElementById(`line-${targetId}`);
+            if (line) {
+                const originalWidth = line.style.strokeWidth;
+                line.style.strokeWidth = '8';
+                setTimeout(() => line.style.strokeWidth = originalWidth, 600);
+            }
+
+            const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            particle.setAttribute('r', 8);
+            particle.setAttribute('fill', type === 'gpio' ? '#f59e0b' : '#10b981');
+            particle.setAttribute('class', 'event-particle');
+            particlesLayer.appendChild(particle);
+
+            const reversed = (type === 'gpio');
+            const startX = reversed ? targetNode.posX : backendNode.posX;
+            const startY = reversed ? targetNode.posY : backendNode.posY;
+            const endX = reversed ? backendNode.posX : targetNode.posX;
+            const endY = reversed ? backendNode.posY : targetNode.posY;
+
+            const duration = 600;
+            const startTime = performance.now();
+
+            function animate(time) {
+                const p = (time - startTime) / duration;
+                if (p < 1) {
+                    particle.setAttribute('cx', startX + (endX - startX) * p);
+                    particle.setAttribute('cy', startY + (endY - startY) * p);
+                    requestAnimationFrame(animate);
+                } else {
+                    particle.remove();
+                }
+            }
+            requestAnimationFrame(animate);
+            addLog(label);
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('event-log');
+            if (log.querySelector('.italic')) log.innerHTML = '';
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.innerHTML = `<span><i class="ti ti-chevron-right text-info"></i> ${msg}</span><span class="text-white-50 ms-2">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>`;
+            log.prepend(item);
+            if (log.children.length > 10) log.lastChild.remove();
+        }
+
+        function setupSocket() {
+            const s = (typeof io !== 'undefined') ? io() : null;
+            if (!s) return;
+            s.on('gpio-event', (data) => {
+                if (data.state === 1) {
+                    triggerEvent('gpio', 'gpio', `Pulsador ${data.pin} activado`, `BOTÓN ↓`);
+                }
+            });
+            s.on('print-event', (data) => {
+                triggerEvent('printer', 'print', `Ticket #${data.ticket} generado`, `IMPRIMIENDO #${data.ticket} 🖨️`);
+            });
+            s.on('turn-update', (data) => {
+                triggerEvent('frontend', 'call', `Llamando turno #${data.turn}`, `LLAMANDO #${data.turn} 📢`);
+                const turnEl = document.getElementById('web-live-turn');
+                if (turnEl) turnEl.textContent = data.turn;
+            });
+            s.on('connect', () => addLog('Conectado al servidor Socket.IO'));
+        }
+
+        function startPolling() {
+            updateStatus();
+            setInterval(updateStatus, 3000);
+        }
+
+        init();
+        window.addEventListener('resize', () => {
+            config.centerX = container.clientWidth / 2;
+            config.centerY = container.clientHeight / 2;
+            config.orbitRadius = Math.min(container.clientWidth, container.clientHeight) * 0.35;
+            render();
+        });
+    })();
+</script>

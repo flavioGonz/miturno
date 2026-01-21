@@ -1,0 +1,227 @@
+/* --------------------------------------------------------------------
+   File: /public/css/theme-dark.css
+   Theme: Turnito Dark Mode
+   Versión: 1.0 - Offline Optimized for Raspberry Pi
+-------------------------------------------------------------------- */
+
+/* General Reset & Background */
+body {
+  background-color: #0e0e0e;
+  color: #e0e0e0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5 {
+  color: #00b4d8;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+p, span, label {
+  color: #c9c9c9;
+}
+
+a {
+  color: #5dd3ff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #91e5ff;
+}
+
+/* Cards & Containers */
+.card {
+  background-color: #151515;
+  border: 1px solid #222;
+  border-radius: 8px;
+  color: #ddd;
+}
+
+.card-header {
+  border-bottom: 1px solid #333;
+  background-color: #151515;
+  color: #eee;
+  font-weight: 500;
+}
+
+.card-body {
+  padding: 1rem 1.2rem;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background 0.2s ease-in-out;
+}
+
+.btn-outline-primary {
+  color: #4ecdc4;
+  border-color: #4ecdc4;
+}
+.btn-outline-primary:hover {
+  background-color: #4ecdc4;
+  color: #111;
+}
+
+.btn-outline-success {
+  color: #7dd87d;
+  border-color: #7dd87d;
+}
+.btn-outline-success:hover {
+  background-color: #7dd87d;
+  color: #111;
+}
+
+.btn-outline-danger {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+.btn-outline-danger:hover {
+  background-color: #ff6b6b;
+  color: #111;
+}
+
+.btn-outline-info {
+  color: #5bc0de;
+  border-color: #5bc0de;
+}
+.btn-outline-info:hover {
+  background-color: #5bc0de;
+  color: #111;
+}
+
+.btn-outline-secondary {
+  color: #aaa;
+  border-color: #666;
+}
+.btn-outline-secondary:hover {
+  background-color: #999;
+  color: #111;
+}
+
+/* Tables */
+.table {
+  background: #111;
+  color: #ddd;
+}
+.table thead {
+  background: #1b1b1b;
+  color: #8adfff;
+}
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #141414;
+}
+
+/* Forms */
+input, select, textarea {
+  background-color: #1b1b1b !important;
+  color: #eee !important;
+  border: 1px solid #333 !important;
+  border-radius: 5px !important;
+  padding: 6px 10px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #4ecdc4 !important;
+  outline: none;
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: #121212;
+  border-right: 1px solid #1f1f1f;
+  padding-top: 1rem;
+}
+.sidebar .nav-link {
+  color: #ccc;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 0;
+}
+.sidebar .nav-link.active,
+.sidebar .nav-link:hover {
+  background-color: #1b1b1b;
+  color: #00b4d8;
+}
+
+/* Header */
+.header {
+  background-color: #111;
+  border-bottom: 1px solid #1f1f1f;
+  padding: 0.5rem 1rem;
+}
+.header .nav-link {
+  color: #ccc;
+}
+.header .nav-link:hover {
+  color: #4ecdc4;
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+  color: #bbb;
+  background: #111;
+  border: 1px solid #333;
+  border-bottom: none;
+}
+.nav-tabs .nav-link.active {
+  background: #00b4d8;
+  color: #111;
+  font-weight: 600;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.alert-info {
+  background-color: #006d77;
+  color: #e0fbfc;
+}
+.alert-success {
+  background-color: #2a9d8f;
+  color: #e0fbfc;
+}
+.alert-danger {
+  background-color: #c1121f;
+  color: #fff;
+}
+.alert-warning {
+  background-color: #ffba08;
+  color: #000;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4ecdc4;
+}
+
+/* Iframes */
+iframe {
+  border-radius: 8px;
+  background: #000;
+}
+
+/* Footer */
+footer {
+  color: #777;
+  text-align: center;
+  padding: 0.8rem;
+  font-size: 0.85rem;
+  border-top: 1px solid #222;
+}

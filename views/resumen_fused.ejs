@@ -1,0 +1,474 @@
+<div class="container-fluid py-4">
+    <!-- 🚀 SECCIÓN 1: CENTRO DE OPERACIONES (COLAS) -->
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <h2 class="text-white mb-1"><i class="ti ti-users text-primary me-2"></i>Centro de Operaciones</h2>
+            <p class="text-secondary small mb-0">Gestión de colas y turnos en tiempo real</p>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-new-queue">
+                <i class="ti ti-plus me-2"></i>Nueva Cola
+            </button>
+        </div>
+    </div>
+
+    <!-- 📊 Widgets de Estadísticas (Colas) -->
+    <div class="row row-deck mb-5">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm glass-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar shadow-sm"><i class="ti ti-users"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium h2 mb-0" id="stat-total-waiting">0</div>
+                            <div class="text-secondary small">Esperando ahora</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm glass-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-green text-white avatar shadow-sm"><i class="ti ti-ticket"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium h2 mb-0" id="stat-active-queues">0</div>
+                            <div class="text-secondary small">Colas activas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm glass-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-info text-white avatar shadow-sm"><i class="ti ti-printer"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium h2 mb-0" id="stat-printer-status">Verificando...</div>
+                            <div class="text-secondary small">Estado Impresora</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm glass-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-warning text-white avatar shadow-sm"><i class="ti ti-device-tv"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium h2 mb-0" id="badgeHdmiStatus">Activo</div>
+                            <div class="text-secondary small">Salida HDMI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📋 Listado de Colas -->
+    <div class="row row-cards mb-5" id="queue-list">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-secondary">Cargando estaciones de servicio...</div>
+        </div>
+    </div>
+
+    <hr class="my-5 border-secondary opacity-25">
+
+    <!-- 🛡️ SECCIÓN 2: MONITOREO DEL SISTEMA (HARDWARE) -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-white mb-1"><i class="ti ti-activity text-green me-2"></i>Monitoreo del Sistema</h2>
+            <p class="text-secondary small mb-0">Estado real del hardware y recursos de la Raspberry Pi</p>
+        </div>
+        <div class="ms-auto text-end">
+            <div id="connectionStatus" class="badge bg-green-lt animate-pulse">
+                <i class="ti ti-plug me-1"></i> Sistema Operativo
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- CPU Chart Card -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card glass-card border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase">CPU (%)</div>
+                            <h3 class="h1 mb-0" id="currentCPU">0%</h3>
+                        </div>
+                        <span class="avatar bg-primary-lt text-primary"><i class="ti ti-cpu"></i></span>
+                    </div>
+                    <div style="height: 120px;">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-around text-center small text-secondary">
+                        <div>
+                            <div class="fw-bold text-white" id="load1">0.00</div>1m
+                        </div>
+                        <div>
+                            <div class="fw-bold text-white" id="load5">0.00</div>5m
+                        </div>
+                        <div>
+                            <div class="fw-bold text-white" id="load15">0.00</div>15m
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAM Chart Card -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card glass-card border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase">RAM (%)</div>
+                            <h3 class="h1 mb-0" id="currentRAM">0%</h3>
+                        </div>
+                        <span class="avatar bg-green-lt text-green"><i class="ti ti-device-memory"></i></span>
+                    </div>
+                    <div style="height: 120px;">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                    <div class="mt-2 text-center small text-secondary">
+                        SWAP: <span class="fw-bold text-white" id="swapUsage">--%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temp Chart Card -->
+        <div class="col-xl-4 col-md-12">
+            <div class="card glass-card border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <div class="text-secondary small fw-bold text-uppercase">Temperatura (°C)</div>
+                            <h3 class="h1 mb-0" id="currentTemp">0°C</h3>
+                        </div>
+                        <span class="avatar bg-orange-lt text-orange"><i class="ti ti-temperature"></i></span>
+                    </div>
+                    <div style="height: 120px;">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                    <div class="mt-2 text-center small text-secondary">
+                        Uptime: <span class="fw-bold text-white" id="uptime">--:--:--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Información de Servicio (PM2) -->
+        <div class="col-md-5">
+            <div class="card glass-card border-0 h-100">
+                <div class="card-body">
+                    <h4 class="card-title text-info mb-4"><i class="ti ti-rocket-off me-2"></i>Estado del Servicio App
+                    </h4>
+                    <div id="pm2Detail">
+                        <div class="d-flex align-items-center mb-3">
+                            <span id="pm2StatusBadge" class="badge bg-secondary-lt me-2">VERIFICANDO</span>
+                            <span class="small text-secondary" id="pm2Uptime">--</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="p-2 border border-secondary border-dashed rounded text-center">
+                                    <div class="small text-secondary">Reinicios</div>
+                                    <div class="fw-bold h2 mb-0" id="pm2Restarts">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-2 border border-secondary border-dashed rounded text-center">
+                                    <div class="small text-secondary">Memoria App</div>
+                                    <div class="fw-bold h2 mb-0 text-azure" id="pm2Memory">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 class="card-title text-info mt-4 mb-3"><i class="ti ti-network me-2"></i>Interfaces de Red</h4>
+                    <div id="networkIps" class="small text-secondary">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USB y Almacenamiento -->
+        <div class="col-md-7">
+            <div class="card glass-card border-0 h-100">
+                <div class="card-body">
+                    <h4 class="card-title text-info mb-3"><i class="ti ti-device-usb me-2"></i>Dispositivos USB</h4>
+                    <div id="usbDevices" class="mb-4" style="max-height: 150px; overflow-y: auto;">
+                        <p class="text-secondary small italic">Detectando periféricos...</p>
+                    </div>
+                    <h4 class="card-title text-info mb-3"><i class="ti ti-database me-2"></i>Almacenamiento</h4>
+                    <div class="mb-2 d-flex justify-content-between small">
+                        <span class="text-secondary">Disco Principal</span>
+                        <span class="text-white" id="diskPct">--%</span>
+                    </div>
+                    <div class="progress progress-sm mb-3">
+                        <div id="diskBar" class="progress-bar bg-primary" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🔹 Modal Nueva Cola (Fusionado) -->
+<div class="modal modal-blur fade" id="modal-new-queue" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurar Nueva Estación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Sector</label>
+                    <input type="text" class="form-control" id="queue-name-input"
+                        placeholder="Ej: Carnicería, Caja 1...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link link-secondary me-auto"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="create-queue-btn">Crear Estación</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="alertContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 10000;"></div>
+
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .glass-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .queue-card {
+        border-left: 4px solid #206bc4;
+    }
+
+    .queue-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        color: #fff;
+        text-shadow: 0 0 15px rgba(32, 107, 196, 0.5);
+    }
+
+    .badge-waiting {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+</style>
+
+<script src="/js/chart.umd.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- LÓGICA DE COLAS (INDEX) ---
+        const queueList = document.getElementById('queue-list');
+        const createBtn = document.getElementById('create-queue-btn');
+        const nameInput = document.getElementById('queue-name-input');
+
+        const fetchSummary = () => {
+            fetch('/api/queues/summary')
+                .then(res => res.json())
+                .then(queues => {
+                    renderQueues(queues);
+                    updateStats(queues);
+                })
+                .catch(err => console.error('Error fetching summary:', err));
+        };
+
+        const updateStats = (queues) => {
+            let totalWaiting = 0;
+            queues.forEach(q => totalWaiting += q.waiting_count);
+            document.getElementById('stat-total-waiting').innerText = totalWaiting;
+            document.getElementById('stat-active-queues').innerText = queues.length;
+
+            fetch('/api/print/status').then(res => res.json()).then(status => {
+                const el = document.getElementById('stat-printer-status');
+                el.innerText = status.connected ? 'OK' : 'ERR';
+                el.className = status.connected ? 'font-weight-medium text-green' : 'font-weight-medium text-danger';
+            });
+        };
+
+        const renderQueues = (queues) => {
+            if (queues.length === 0) {
+                queueList.innerHTML = '<div class="col-12 text-center text-secondary">No hay colas configuradas.</div>';
+                return;
+            }
+            queueList.innerHTML = '';
+            queues.forEach(q => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-xl-4 mb-4';
+                col.innerHTML = `
+                    <div class="card queue-card glass-card shadow-sm h-100">
+                        <div class="card-body position-relative">
+                            <span class="badge bg-blue-lite text-blue badge-waiting">${q.waiting_count} en espera</span>
+                            <div class="mb-3">
+                                <h3 class="card-title h2 mb-1">${q.name}</h3>
+                                <div class="text-secondary small text-uppercase">Turno Actual</div>
+                            </div>
+                            <div class="py-3 text-center"><div class="queue-number">${q.current_turn || '---'}</div></div>
+                            <div class="mt-4 d-flex gap-2">
+                                <button class="btn btn-primary flex-fill" onclick="callNext(${q.id})">Llama Siguiente</button>
+                                <button class="btn btn-warning btn-icon" onclick="setActiveQueue(${q.id})" title="Usar para Pulsadores">
+                                    <i class="ti ti-hand-finger"></i>
+                                </button>
+                                <a href="/queue/${q.id}" class="btn btn-outline-secondary btn-icon"><i class="ti ti-settings"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                queueList.appendChild(col);
+            });
+        };
+
+        window.callNext = (id) => {
+            fetch(`/api/queues/${id}/call-next`, { method: 'POST' }).then(() => fetchSummary());
+        };
+
+        window.setActiveQueue = (id) => {
+            fetch(`/api/set-active-queue/${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    alert(`✅ Cola #${id} configurada para Pulsadores`);
+                });
+        };
+
+        createBtn.addEventListener('click', () => {
+            if (!nameInput.value.trim()) return;
+            fetch('/api/queues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nameInput.value })
+            }).then(() => {
+                nameInput.value = '';
+                bootstrap.Modal.getInstance(document.getElementById('modal-new-queue')).hide();
+                fetchSummary();
+            });
+        });
+
+        // --- LÓGICA DE SISTEMA (RESUMEN) ---
+        const makeChart = (id, color) => new Chart(document.getElementById(id).getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: Array(25).fill(''),
+                datasets: [{
+                    data: Array(25).fill(0),
+                    borderColor: color, borderWidth: 1.5, pointRadius: 0, fill: true, backgroundColor: color + '15', tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { min: 0, max: 100, ticks: { display: false }, grid: { display: false } } }
+            }
+        });
+
+        const cpuChart = makeChart('cpuChart', '#206bc4');
+        const ramChart = makeChart('ramChart', '#2fb344');
+        const tempChart = makeChart('tempChart', '#f76707');
+
+        async function getJSON(url) {
+            try { const res = await fetch(url); return await res.json(); } catch { return null; }
+        }
+
+        function addData(chart, val) {
+            const d = chart.data.datasets[0].data;
+            d.push(parseFloat(val || 0));
+            if (d.length > 25) d.shift();
+            chart.update();
+        }
+
+        async function updateLoop() {
+            const metrics = await Promise.all([
+                getJSON('/api/system/cpu-usage'), getJSON('/api/system/memory-usage'),
+                getJSON('/api/system/cpu-temp'), getJSON('/api/system/load-avg'),
+                getJSON('/api/system/disk-usage'), getJSON('/api/system/uptime'),
+                getJSON('/api/system/swap-usage'), getJSON('/api/system/pm2-status-detail'),
+                getJSON('/api/system/network-ips')
+            ]);
+
+            const [cpu, mem, temp, load, disk, up, swap, pm2, nets] = metrics;
+            if (cpu) { document.getElementById('currentCPU').innerText = cpu.cpu_usage + '%'; addData(cpuChart, cpu.cpu_usage); }
+            if (mem) { document.getElementById('currentRAM').innerText = mem.ram + '%'; addData(ramChart, mem.ram); }
+            if (temp) { document.getElementById('currentTemp').innerText = temp.temperature + '°C'; addData(tempChart, temp.temperature); }
+            if (load) { document.getElementById('load1').innerText = load.load1; document.getElementById('load5').innerText = load.load5; document.getElementById('load15').innerText = load.load15; }
+            if (disk) { document.getElementById('diskPct').innerText = disk.pct; document.getElementById('diskBar').style.width = disk.pct; }
+            if (up) document.getElementById('uptime').innerText = up.uptime;
+            if (swap) document.getElementById('swapUsage').innerText = swap.swap + '%';
+            if (pm2) {
+                const b = document.getElementById('pm2StatusBadge');
+                b.innerText = (pm2.status || 'OFF').toUpperCase();
+                b.className = `badge ${pm2.status === 'online' ? 'bg-green-lt' : 'bg-red-lt'} me-2`;
+                document.getElementById('pm2Uptime').innerText = 'UP: ' + pm2.uptime + 's';
+                document.getElementById('pm2Restarts').innerText = pm2.restarts || 0;
+                document.getElementById('pm2Memory').innerText = pm2.memory || '--';
+            }
+            if (nets) {
+                document.getElementById('networkIps').innerHTML = Object.keys(nets).map(iface => `<div><b>${iface}:</b> ${nets[iface].join(', ')}</div>`).join('');
+            }
+        }
+
+        async function updateHardware() {
+            const usbs = await getJSON('/api/hardware/usb-devices');
+            if (usbs) {
+                document.getElementById('usbDevices').innerHTML = usbs.map(dev => `<div class="p-1 mb-1 bg-black-lt small">${dev}</div>`).join('');
+            }
+        }
+
+        // Init loops
+        fetchSummary();
+        updateLoop();
+        updateHardware();
+        setInterval(fetchSummary, 5000);
+        setInterval(updateLoop, 4000);
+        setInterval(updateHardware, 15000);
+    });
+</script>

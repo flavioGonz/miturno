@@ -1,0 +1,43 @@
+
+// -----------------------------------------------------------------------------
+// 📺 CHROMECAST API ENDPOINTS
+// -----------------------------------------------------------------------------
+
+// Escanear dispositivos Chromecast
+app.get('/api/chromecast/scan', isApiAuthenticated, (req, res) => {
+  console.log('🔍 [Chromecast] Consultando dispositivos...');
+  res.json({ devices: chromecasts });
+});
+
+// Transmitir contenido a Chromecast
+app.post('/api/chromecast/cast', isApiAuthenticated, (req, res) => {
+  const { ip, url } = req.body;
+  
+  if (!ip || !url) {
+    return res.status(400).json({ error: 'IP y URL requeridos' });
+  }
+
+  console.log(`[CAST] ${ip} -> ${url}`);
+
+  const deviceData = chromecasts.find(c => c.address === ip);
+  
+  if (!deviceData || !deviceData.device) {
+    return res.status(404).json({ error: 'Dispositivo no encontrado. Escanea la red primero.' });
+  }
+
+  const device = deviceData.device;
+
+  try {
+    device.play(url, 0, (err) => {
+      if (err) {
+        console.error('[CAST ERROR]', err);
+        return res.status(500).json({ error: 'Error al reproducir: ' + err.message });
+      }
+      res.json({ success: true, message: 'Casting iniciado correctamente' });
+    });
+  } catch (e) {
+    console.error('[CAST EXCEPTION]', e);
+    res.status(500).json({ error: 'Error interno: ' + e.message });
+  }
+});
+

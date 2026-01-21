@@ -1,0 +1,291 @@
+<!-- 🖥️ Modal HDMI - Premium Edition con Lucide Icons -->
+<div class="modal fade" id="modalHdmi" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content"
+            style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <!-- Header -->
+            <div class="modal-header border-0 pb-0"
+                style="background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(10px);">
+                <div class="d-flex align-items-center gap-3">
+                    <div
+                        style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="14" x="2" y="3" rx="2" />
+                            <line x1="8" x2="16" y1="21" y2="21" />
+                            <line x1="12" x2="12" y1="17" y2="21" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 text-white fw-bold">Panel de Control HDMI</h4>
+                        <small class="text-white-50">Gestión avanzada de pantalla</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Status Cards -->
+                <div class="row g-3 mb-4">
+                    <!-- Monitor Info -->
+                    <div class="col-md-8">
+                        <div class="card border-0"
+                            style="background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px);">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <div class="text-white-50 small mb-1 text-uppercase fw-semibold">Monitor
+                                            Detectado</div>
+                                        <h3 class="text-white mb-0 d-flex align-items-center gap-2" id="hdmiName">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="M12 6v6l4 2" />
+                                            </svg>
+                                            Detectando...
+                                        </h3>
+                                    </div>
+                                    <div id="hdmiStatusBadge"></div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center gap-2 text-white-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path
+                                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                                                <line x1="12" x2="12" y1="22.08" y2="12" />
+                                            </svg>
+                                            <span class="small">Resolución</span>
+                                        </div>
+                                        <div class="text-white fw-bold fs-5 mt-1" id="hdmiRes">--</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="d-flex align-items-center gap-2 text-white-50">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                                                <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                                            </svg>
+                                            <span class="small">Tipo</span>
+                                        </div>
+                                        <div class="text-white fw-bold fs-5 mt-1" id="hdmiType">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="col-md-4">
+                        <div class="card border-0 h-100"
+                            style="background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px);">
+                            <div class="card-body d-flex flex-column">
+                                <div class="text-white-50 small mb-3 text-uppercase fw-semibold">Control de Energía
+                                </div>
+                                <div class="d-grid gap-2 flex-grow-1">
+                                    <button
+                                        class="btn btn-success d-flex align-items-center justify-content-center gap-2"
+                                        onclick="controlHdmiPower('on')" style="border-radius: 8px; padding: 12px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10" />
+                                            <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+                                        </svg>
+                                        Encender
+                                    </button>
+                                    <button
+                                        class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
+                                        onclick="controlHdmiPower('off')" style="border-radius: 8px; padding: 12px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                                            <line x1="12" x2="12" y1="2" y2="12" />
+                                        </svg>
+                                        Apagar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resolution Selector -->
+                <div class="card border-0 mb-3" style="background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px);">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-primary">
+                                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                <path d="M3 3v5h5" />
+                                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                                <path d="M16 16h5v5" />
+                            </svg>
+                            <h5 class="mb-0 text-white">Cambiar Resolución</h5>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <select id="hdmiModesSelect" class="form-select form-select-lg"
+                                    style="background: rgba(15, 23, 42, 0.8); border: 1px solid #475569; color: white; border-radius: 8px;">
+                                    <option value="">Cargando modos disponibles...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button
+                                    class="btn btn-primary w-100 btn-lg d-flex align-items-center justify-content-center gap-2"
+                                    id="btnApplyRes" disabled onclick="applyHdmiResolution()"
+                                    style="border-radius: 8px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Aplicar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info d-flex align-items-start gap-2 mt-3 mb-0"
+                            style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-info mt-1">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                            <div class="small">
+                                <strong>Nota:</strong> El cambio de resolución es temporal. Si la pantalla se queda en
+                                negro, espere 10 segundos y volverá automáticamente.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refresh Button -->
+                <div class="text-center">
+                    <button class="btn btn-outline-light d-inline-flex align-items-center gap-2"
+                        onclick="actualizarHdmi()" style="border-radius: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                            <path d="M16 16h5v5" />
+                        </svg>
+                        Actualizar Información
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🖥️ HDMI - Actualizar Status y Modos (DRM moderno)
+    window.actualizarHdmi = async () => {
+        const hdmiName = document.getElementById('hdmiName');
+        const hdmiRes = document.getElementById('hdmiRes');
+        const hdmiType = document.getElementById('hdmiType');
+        const hdmiBadge = document.getElementById('hdmiStatusBadge');
+        const select = document.getElementById('hdmiModesSelect');
+
+        // 1. Obtener status actual
+        const d = await fetch('/api/hdmi/status', { credentials: 'include' }).then(r => r.json());
+
+        if (d.connected) {
+            hdmiName.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+      ${d.name || 'Monitor HDMI'}
+    `;
+            hdmiRes.textContent = d.resolution || '--';
+            hdmiType.textContent = d.info || 'Digital';
+            hdmiBadge.innerHTML = `
+      <span class="badge bg-success d-flex align-items-center gap-1" style="padding: 8px 12px; border-radius: 8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Conectado
+      </span>
+    `;
+        } else {
+            hdmiName.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
+      Desconectado
+    `;
+            hdmiRes.textContent = '--';
+            hdmiType.textContent = '--';
+            hdmiBadge.innerHTML = `
+      <span class="badge bg-danger d-flex align-items-center gap-1" style="padding: 8px 12px; border-radius: 8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+        Sin Señal
+      </span>
+    `;
+        }
+
+        // 2. Cargar modos disponibles
+        const m = await fetch('/api/hdmi/modes', { credentials: 'include' }).then(r => r.json());
+        if (m.modes && m.modes.length > 0) {
+            select.innerHTML = m.modes.map(mode =>
+                `<option value="${mode.resolution}">${mode.resolution} (${mode.type})</option>`
+            ).join('');
+            document.getElementById('btnApplyRes').disabled = false;
+        } else {
+            select.innerHTML = '<option value="">No se detectaron modos</option>';
+        }
+    };
+
+    // 🔬 Aplicar Resolución
+    window.applyHdmiResolution = async () => {
+        const select = document.getElementById('hdmiModesSelect');
+        const resolution = select.value;
+        if (!resolution) return;
+
+        const res = await fetch('/api/hdmi/set-resolution', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resolution })
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        setTimeout(actualizarHdmi, 2000);
+    };
+
+    // 📺 Control HDMI Power
+    window.controlHdmiPower = async (state) => {
+        const res = await fetch('/api/hdmi/power', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(data.message);
+            setTimeout(actualizarHdmi, 2000);
+        } else {
+            alert('Error al controlar la pantalla.');
+        }
+    };
+</script>
+
+<style>
+    .modal-content {
+        border-radius: 16px !important;
+    }
+
+    .card {
+        border-radius: 12px !important;
+    }
+
+    .form-select:focus,
+    .btn:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+    }
+</style>

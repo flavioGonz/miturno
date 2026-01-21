@@ -1,0 +1,546 @@
+<!--
+  File: /views/sistema/impresion.ejs
+  Descripción: Ticket Studio POS - Modern Tech Design
+  Versión: 9.0 - Sharp Corners / Compact Layout / Precise Alignment
+-->
+
+<div class="studio-wrapper animate-in fade-in duration-500">
+  <div class="container-fluid py-4 h-100">
+    <!-- 📐 TOP NAVIGATION -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+      <div>
+        <div class="text-secondary small fw-bold text-uppercase tracking-widest mb-1">Configuración de Salida</div>
+        <h2 class="text-white fw-bold m-0 d-flex align-items-center gap-2">
+          <i class="ti ti-printer text-azure"></i> Ticket <span class="text-azure">Studio</span>
+        </h2>
+      </div>
+    </div>
+
+    <!-- 🧩 MAIN GRID -->
+    <div class="row g-3 items-stretch">
+      <!-- 🔌 LEFT: CONNECTION SETTINGS -->
+      <div class="col-lg-3 col-md-4">
+        <div class="tech-card h-100">
+          <div class="card-edge-azure"></div>
+          <div class="p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <i class="ti ti-plug fs-2 text-azure"></i>
+              <h4 class="m-0 text-white fw-bold">Conectividad</h4>
+            </div>
+
+            <!-- 🖨️ PRINTER IMAGE STYLING -->
+            <div class="text-center mb-4 p-3 bg-black-20 rounded shadow-inner">
+              <img src="/img/impresora-pos.png" alt="POS Printer" class="img-fluid opacity-80"
+                style="max-height: 120px; filter: drop-shadow(0 0 15px rgba(32, 107, 196, 0.2));">
+            </div>
+
+            <div class="control-group mb-4">
+              <label class="tech-label">Interfaz de Salida</label>
+              <select id="printerMode" class="tech-select w-100">
+                <option value="usb">ID: USB / Local POS</option>
+                <option value="network">ID: Network / TCP-IP</option>
+              </select>
+            </div>
+
+            <div id="ipContainer" class="control-group mb-4 d-none animate-in slide-in-from-top-1">
+              <label class="tech-label">Dirección IP Host</label>
+              <div class="tech-input-group">
+                <input id="printerIP" type="text" class="tech-input w-100" placeholder="192.168.0.0">
+                <button id="btnPingTest" class="tech-btn-addon" title="Probar Ping">
+                  <i class="ti ti-broadcast"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-top border-white-5">
+              <button id="btnTestPrint" class="btn-tech-primary w-100 py-3 mb-2" disabled>
+                <i class="ti ti-file-text"></i> Imprimir Prueba
+              </button>
+              <p class="text-center text-secondary small m-0 italic opacity-50">
+                Comprobar alimentación y cable
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🏛️ CENTER: REAL-TIME MOCKUP -->
+      <div class="col-lg-6 col-md-4">
+        <div class="tech-card-center h-100 d-flex flex-column">
+          <div class="p-3 text-center border-bottom border-white-5">
+            <span class="text-secondary small fw-bold tracking-widest">LIVE RENDER PREVIEW</span>
+          </div>
+
+          <div class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+            <!-- Realistic Thermal Paper Mockup -->
+            <div class="thermal-paper-container animate-in zoom-in duration-300">
+              <div class="paper-top-jagged"></div>
+              <div class="ticket-thermal shadow-2xl">
+                <div class="ticket-thermal-texture"></div>
+
+                <div class="ticket-inner p-4">
+                  <div class="ticket-header text-center">
+                    <div id="previewStore" class="ticket-name-bold">NOMBRE DE COMERCIO</div>
+                    <div id="previewSector" class="ticket-sub">Departamento / Área</div>
+                  </div>
+
+                  <div class="ticket-sep mt-4"></div>
+
+                  <div class="ticket-main text-center py-4">
+                    <div class="ticket-num-label">TURNO</div>
+                    <div id="ticketNumber" class="ticket-id">B-128</div>
+                  </div>
+
+                  <div class="ticket-sep mb-4"></div>
+
+                  <div class="d-flex justify-content-between px-1 mb-4">
+                    <span class="ticket-meta" id="ticketDate">16/01/2026</span>
+                    <span class="ticket-meta" id="ticketTime">12:06 hs</span>
+                  </div>
+
+                  <div class="ticket-sep mb-3"></div>
+
+                  <div id="previewMessage" class="ticket-footer text-center">
+                    ¡Gracias por su visita y preferencia!
+                  </div>
+
+                  <div class="ticket-barcode-sim mt-3"></div>
+                </div>
+              </div>
+              <div class="paper-bottom-jagged"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✍️ RIGHT: DATA FIELDS -->
+      <div class="col-lg-3 col-md-4">
+        <div class="tech-card h-100">
+          <div class="card-edge-green"></div>
+          <div class="p-4">
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <i class="ti ti-edit fs-2 text-green"></i>
+              <h4 class="m-0 text-white fw-bold">Branding</h4>
+            </div>
+
+            <div class="control-group mb-3">
+              <label class="tech-label">Título del Ticket</label>
+              <input id="inputStore" type="text" class="tech-input w-100" placeholder="Nombre del local">
+            </div>
+
+            <div class="control-group mb-3">
+              <label class="tech-label">Subtítulo / Área</label>
+              <input id="inputSector" type="text" class="tech-input w-100" placeholder="Ej: Atención al cliente">
+            </div>
+
+            <div class="control-group mb-4">
+              <label class="tech-label">Información de Pie</label>
+              <textarea id="inputMessage" rows="4" class="tech-input w-100"
+                placeholder="Ej: No se aceptan devoluciones"></textarea>
+            </div>
+
+            <div class="mt-auto">
+              <button id="btnSaveConfig" class="btn-tech-success w-100 py-3">
+                <i class="ti ti-device-floppy"></i> Sincronizar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* 🌑 TECH DARK THEME */
+  body {
+    background-color: #0b0d0e;
+    overflow-x: hidden;
+  }
+
+  .studio-wrapper {
+    min-height: calc(100vh - 80px);
+    /* Ajuste para sidebar/header si aplica */
+  }
+
+  /* 💠 TECH CARD SYSTEM (Sharper corners) */
+  .tech-card,
+  .tech-card-center {
+    background: #121417;
+    border: 1px solid #1f2226;
+    border-radius: 4px;
+    /* Shorter radius as requested */
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-edge-azure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #206bc4;
+  }
+
+  .card-edge-green {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #2fb344;
+  }
+
+  /* 🧾 THERMAL PAPER MOCKUP */
+  .thermal-paper-container {
+    position: relative;
+    width: 300px;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+  }
+
+  .ticket-thermal {
+    background: #fff;
+    color: #111;
+    position: relative;
+    border-left: 1px solid #eee;
+    border-right: 1px solid #eee;
+  }
+
+  .paper-top-jagged,
+  .paper-bottom-jagged {
+    height: 10px;
+    width: 100%;
+    background-image: linear-gradient(135deg, transparent 45%, #fff 45%, #fff 55%, transparent 55%),
+      linear-gradient(45deg, transparent 45%, #fff 45%, #fff 55%, transparent 55%);
+    background-size: 16px 16px;
+    background-repeat: repeat-x;
+  }
+
+  .paper-top-jagged {
+    transform: rotate(180deg);
+  }
+
+  .ticket-thermal-texture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: repeating-linear-gradient(rgba(0, 0, 0, 0.01) 0px, rgba(0, 0, 0, 0.01) 1px, transparent 1px, transparent 2px);
+    pointer-events: none;
+  }
+
+  .ticket-inner {
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .ticket-name-bold {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #000;
+    text-transform: uppercase;
+  }
+
+  .ticket-sub {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #555;
+  }
+
+  .ticket-sep {
+    border-top: 2px dashed #bbb;
+  }
+
+  .ticket-num-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #888;
+    letter-spacing: 2px;
+  }
+
+  .ticket-id {
+    font-size: 5rem;
+    font-weight: 900;
+    color: #000;
+    line-height: 1;
+  }
+
+  .ticket-meta {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #444;
+  }
+
+  .ticket-footer {
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .ticket-barcode-sim {
+    height: 30px;
+    background: repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 5px);
+    opacity: 0.1;
+  }
+
+  /* ⌨️ CONTROLS */
+  .tech-label {
+    display: block;
+    color: #666;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .tech-input,
+  .tech-select {
+    background: #0b0d0e;
+    border: 1px solid #2a2e33;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .tech-input:focus,
+  .tech-select:focus {
+    border-color: #206bc4;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(32, 107, 196, 0.2);
+  }
+
+  .tech-input-group {
+    display: flex;
+  }
+
+  .tech-input-group .tech-input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .tech-btn-addon {
+    background: #206bc4;
+    border: none;
+    color: #fff;
+    padding: 0 15px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* 🚀 BUTTONS */
+  .btn-tech-primary {
+    background: #206bc4;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+    transition: filter 0.2s;
+  }
+
+  .btn-tech-success {
+    background: #2fb344;
+    border: none;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .btn-tech-primary:hover,
+  .btn-tech-success:hover {
+    filter: brightness(1.2);
+  }
+
+  .btn-tech-primary:disabled {
+    background: #1f2226;
+    color: #444;
+  }
+
+  /* 🚦 STATUS INDICATOR */
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #121417;
+    border: 1px solid #1f2226;
+    border-radius: 4px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #444;
+  }
+
+  .status-text {
+    font-size: 0.75rem;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .status-indicator.online .status-dot {
+    background: #2fb344;
+    box-shadow: 0 0 10px #2fb344;
+    animation: blink 2s infinite;
+  }
+
+  .status-indicator.offline .status-dot {
+    background: #d63939;
+  }
+
+  @keyframes blink {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.4;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* UTILS */
+  .text-azure {
+    color: #206bc4;
+  }
+
+  .text-green {
+    color: #2fb344;
+  }
+
+  .border-white-5 {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnTest = document.getElementById("btnTestPrint");
+    const btnPing = document.getElementById("btnPingTest");
+    const modeSelect = document.getElementById("printerMode");
+    const ipContainer = document.getElementById("ipContainer");
+    const ipInput = document.getElementById("printerIP");
+
+    const storeInput = document.getElementById("inputStore");
+    const sectorInput = document.getElementById("inputSector");
+    const msgInput = document.getElementById("inputMessage");
+    const saveBtn = document.getElementById("btnSaveConfig");
+
+    const previewStore = document.getElementById("previewStore");
+    const previewSector = document.getElementById("previewSector");
+    const previewMsg = document.getElementById("previewMessage");
+    const ticketNumber = document.getElementById("ticketNumber");
+    const ticketTime = document.getElementById("ticketTime");
+    const ticketDate = document.getElementById("ticketDate");
+
+    let activeQueueId = null;
+
+    async function getActiveQueue() {
+      try {
+        const res = await fetch("/api/get-active-queue", { credentials: "include" });
+        const data = await res.json();
+        if (data?.queue?.id) {
+          activeQueueId = data.queue.id;
+          await loadConfig();
+        }
+      } catch { }
+    }
+
+    async function checkPrinter() {
+      try {
+        const res = await fetch("/api/print/status", { credentials: "include" });
+        const data = await res.json();
+        if (data.connected) {
+          btnTest.disabled = false;
+        } else {
+          btnTest.disabled = true;
+        }
+      } catch {
+        btnTest.disabled = true;
+      }
+    }
+
+    async function loadConfig() {
+      if (!activeQueueId) return;
+      try {
+        const res = await fetch(`/api/print/config/${activeQueueId}`, { credentials: "include" });
+        const data = await res.json();
+        storeInput.value = data.store || "";
+        sectorInput.value = data.sector || "";
+        msgInput.value = data.message || "";
+        updatePreview();
+      } catch (e) { }
+    }
+
+    saveBtn.addEventListener("click", async () => {
+      if (!activeQueueId) return;
+      saveBtn.disabled = true;
+      const oldText = saveBtn.innerHTML;
+      saveBtn.innerHTML = "SINCRONIZANDO...";
+
+      const body = {
+        store: storeInput.value.trim(),
+        sector: sectorInput.value.trim(),
+        message: msgInput.value.trim()
+      };
+
+      try {
+        const res = await fetch(`/api/print/config/${activeQueueId}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          credentials: "include", body: JSON.stringify(body)
+        });
+        if (res.ok) {
+          saveBtn.innerHTML = "SINCRONIZADO";
+          setTimeout(() => { saveBtn.disabled = false; saveBtn.innerHTML = oldText; }, 1500);
+        }
+      } catch (e) { saveBtn.disabled = false; saveBtn.innerHTML = "ERROR"; }
+      updatePreview();
+    });
+
+    function updatePreview() {
+      previewStore.textContent = storeInput.value.trim() || "MI COMERCIO";
+      previewSector.textContent = sectorInput.value.trim() || "Caja Central";
+      previewMsg.textContent = msgInput.value.trim() || "¡Gracias por preferirnos!";
+      const now = new Date();
+      ticketDate.textContent = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${String(now.getFullYear()).slice(-2)}`;
+      ticketTime.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} hs`;
+      if (ticketNumber.textContent === "--" || ticketNumber.textContent === "B-128") {
+        ticketNumber.textContent = "A" + Math.floor(Math.random() * 900 + 100);
+      }
+    }
+
+    [storeInput, sectorInput, msgInput].forEach(i => i.addEventListener("input", updatePreview));
+
+    modeSelect.addEventListener("change", () => {
+      ipContainer.classList.toggle("d-none", modeSelect.value !== 'network');
+    });
+
+    btnTest.addEventListener("click", async () => {
+      btnTest.innerHTML = "PROCESANDO...";
+      await fetch("/api/print/test", { method: "POST", credentials: "include" });
+      setTimeout(() => { btnTest.innerHTML = "<i class='ti ti-file-text'></i> Imprimir Prueba"; }, 1000);
+    });
+
+    btnPing.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/print/status", { credentials: "include" });
+        const data = await res.json();
+        alert(data.connected ? "Enlace de red exitoso" : "No se encontró la impresora.");
+      } catch (e) { }
+    });
+
+    getActiveQueue();
+    checkPrinter();
+    setInterval(checkPrinter, 5000);
+  });
+</script>

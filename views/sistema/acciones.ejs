@@ -1,0 +1,157 @@
+<!--
+  File: /home/fgonzalez/turnito/views/sistema/acciones.ejs
+  Descripción: Panel de acciones del sistema (reboot, shutdown, update, hostname, hora)
+  Versión: 3.0 - Offline Edition
+-->
+
+<div class="container-fluid">
+  <h2 class="text-info mb-4">
+    <i class="ti ti-tools"></i> Acciones del Sistema
+  </h2>
+
+  <!-- Alertas dinámicas -->
+  <div id="alertBox" class="alert d-none mt-3"></div>
+
+  <div class="row g-4">
+    <!-- ACCIONES BÁSICAS -->
+    <div class="col-md-6">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h4 class="text-light mb-3"><i class="ti ti-power"></i> Control del Sistema</h4>
+        <div class="d-grid gap-2">
+          <button class="btn btn-warning" id="rebootBtn"><i class="ti ti-rotate"></i> Reiniciar Raspberry Pi</button>
+          <button class="btn btn-danger" id="shutdownBtn"><i class="ti ti-power-off"></i> Apagar Raspberry Pi</button>
+          <button class="btn btn-info" id="updateBtn"><i class="ti ti-download"></i> Actualizar Sistema Operativo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOSTNAME -->
+    <div class="col-md-6">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h4 class="text-light mb-3"><i class="ti ti-device-desktop"></i> Hostname</h4>
+        <div class="mb-2">
+          <label class="form-label text-light">Nombre actual</label>
+          <input id="hostnameInput" type="text" class="form-control bg-dark text-light border-0" placeholder="Cargando...">
+        </div>
+        <button class="btn btn-outline-primary w-100" id="saveHostname"><i class="ti ti-check"></i> Guardar Hostname</button>
+      </div>
+    </div>
+
+    <!-- HORA -->
+    <div class="col-md-6">
+      <div class="card bg-black border-0 shadow-sm p-3">
+        <h4 class="text-light mb-3"><i class="ti ti-clock"></i> Hora del Sistema</h4>
+        <div class="mb-2">
+          <label class="form-label text-light">Fecha y hora actual</label>
+          <input id="timeInput" type="datetime-local" class="form-control bg-dark text-light border-0">
+        </div>
+        <button class="btn btn-outline-success w-100" id="saveTime"><i class="ti ti-clock-edit"></i> Guardar Hora</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .btn { transition: all 0.2s ease-in-out; }
+  .btn:hover { opacity: 0.85; }
+  .card {
+    border-radius: 10px;
+    transition: background-color 0.2s;
+  }
+  .card:hover {
+    background-color: #11161d;
+  }
+  #alertBox {
+    font-weight: 500;
+    text-align: center;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const alertBox = document.getElementById('alertBox');
+  const rebootBtn = document.getElementById('rebootBtn');
+  const shutdownBtn = document.getElementById('shutdownBtn');
+  const updateBtn = document.getElementById('updateBtn');
+  const hostnameInput = document.getElementById('hostnameInput');
+  const saveHostname = document.getElementById('saveHostname');
+  const timeInput = document.getElementById('timeInput');
+  const saveTime = document.getElementById('saveTime');
+
+  const showAlert = (msg, type = 'info') => {
+    alertBox.className = `alert alert-${type}`;
+    alertBox.textContent = msg;
+    alertBox.classList.remove('d-none');
+    setTimeout(() => alertBox.classList.add('d-none'), 6000);
+  };
+
+  const getJSON = async (url, opts = {}) => {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'include', ...opts });
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return {}; }
+  };
+
+  const confirmAndRun = async (question, url, method = 'POST') => {
+    if (!confirm(question)) return;
+    showAlert('Ejecutando acción...', 'info');
+    try {
+      const data = await getJSON(url, { method });
+      showAlert(data.message || 'Acción completada.', 'success');
+    } catch (err) {
+      showAlert(`Error: ${err.message}`, 'danger');
+    }
+  };
+
+  rebootBtn.onclick = () => confirmAndRun('¿Reiniciar la Raspberry Pi ahora?', '/api/system/reboot');
+  shutdownBtn.onclick = () => confirmAndRun('¿Apagar la Raspberry Pi ahora?', '/api/system/shutdown');
+  updateBtn.onclick = () => confirmAndRun('¿Actualizar el sistema operativo? Esto puede demorar varios minutos.', '/api/system/update-os');
+
+  // HOSTNAME
+  const loadHostname = async () => {
+    try {
+      const data = await getJSON('/api/system/hostname');
+      hostnameInput.value = data.hostname || '';
+    } catch {
+      hostnameInput.value = 'Error cargando';
+    }
+  };
+  saveHostname.onclick = async () => {
+    const newHost = hostnameInput.value.trim();
+    if (!newHost) return showAlert('El hostname no puede estar vacío.', 'warning');
+    const res = await fetch('/api/system/hostname', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ hostname: newHost })
+    });
+    const data = await res.json();
+    showAlert(data.message || 'Hostname actualizado', 'success');
+  };
+
+  // HORA
+  const loadTime = async () => {
+    try {
+      const data = await getJSON('/api/system/time');
+      const current = new Date(data.time || Date.now());
+      timeInput.value = current.toISOString().slice(0,16);
+    } catch {
+      timeInput.value = '';
+    }
+  };
+  saveTime.onclick = async () => {
+    const val = timeInput.value;
+    if (!val) return showAlert('Debes ingresar una fecha/hora válida.', 'warning');
+    const res = await fetch('/api/system/time', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ datetime: val })
+    });
+    const data = await res.json();
+    showAlert(data.message || 'Hora del sistema actualizada', 'success');
+  };
+
+  loadHostname();
+  loadTime();
+});
+</script>

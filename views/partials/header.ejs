@@ -1,0 +1,105 @@
+<!--
+  File: /views/partials/header.ejs
+  Descripción: System Logic & Common Scripts (Visuals removed)
+  Versión: 8.0 - Logic Refactoring for New Sidebar
+-->
+
+<!-- Note: This file is now primarily for Logic/Scripts that are shared. 
+     Visual modals are preferably moved to layout or kept here if used globally but hidden. -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 1. METRICS LOGIC (Updated for New Sidebar IDs) ---
+        const els = {
+            host: document.getElementById('badgeHost'),
+            time: document.getElementById('badgeHora'),
+            temp: document.getElementById('badgeTemp'),
+            cpu: document.getElementById('badgeCpu'),
+            ram: document.getElementById('badgeRam')
+        };
+
+        const getJSON = async (url) => {
+            try {
+                const res = await fetch(url, { credentials: 'include' });
+                return await res.json();
+            } catch { return {}; }
+        };
+
+        // Date & Time
+        const updateTime = () => {
+            if (els.time) {
+                const now = new Date();
+                // Simplified format as per user request (de-emphasized)
+                els.time.textContent = now.toLocaleDateString('es-UY') + ' ' + now.toLocaleTimeString('es-UY', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            }
+        };
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Color Helper
+        const colorize = (el, val, criticalVal) => {
+            if (!el) return;
+            el.style.color = val > criticalVal ? '#e53e3e' : '#ffffff';
+            // Reset to white or specific color if normal? Kept simple based on new sidebar vars
+        };
+
+        // System Metrics
+        async function updateMetrics() {
+            try {
+                const [temp, cpu, ram, host] = await Promise.all([
+                    getJSON('/api/system/cpu-temp'),
+                    getJSON('/api/system/cpu-usage'),
+                    getJSON('/api/system/memory-usage'),
+                    getJSON('/api/system/hostname')
+                ]);
+
+                if (temp.temperature && els.temp) {
+                    els.temp.textContent = `${temp.temperature}°C`;
+                    els.temp.className = `metric-val ${temp.temperature > 70 ? 'text-danger' : 'text-success'}`;
+                }
+                if (cpu.cpu_usage && els.cpu) {
+                    els.cpu.textContent = `${cpu.cpu_usage}%`;
+                    els.cpu.className = `metric-val ${cpu.cpu_usage > 80 ? 'text-danger' : 'text-warning'}`;
+                }
+                if (ram.ram && els.ram) {
+                    els.ram.textContent = `${ram.ram}%`;
+                    els.ram.className = `metric-val ${ram.ram > 85 ? 'text-danger' : 'text-info'}`;
+                }
+                if (host.hostname && els.host) {
+                    els.host.textContent = host.hostname;
+                }
+            } catch (e) { console.warn("Metrics update failed", e); }
+        }
+
+        // Start Loop
+        updateMetrics();
+        setInterval(updateMetrics, 5000);
+
+
+        // --- 2. GLOBAL MODAL ACTIONS ---
+        window.openConfirmModal = (action) => {
+            const modalId = {
+                'reboot': 'modalReboot',
+                'shutdown': 'modalShutdown',
+                'update': 'modalUpdate'
+            }[action];
+
+            if (modalId && typeof bootstrap !== 'undefined') {
+                const el = document.getElementById(modalId);
+                if (el) {
+                    const modal = new bootstrap.Modal(el);
+                    modal.show();
+                }
+            }
+        };
+
+        window.execSystemAction = async (action) => {
+            const endpoint = action === 'update' ? '/api/system/update-os' : `/api/system/${action}`;
+            try {
+                const res = await fetch(endpoint, { method: 'POST' });
+                alert(res.ok ? 'Comando enviado con éxito.' : 'Error al ejecutar comando.');
+                // Create a better UI feedback later instead of alert
+            } catch (e) { alert('Error de conexión'); }
+        };
+    });
+</script>

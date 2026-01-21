@@ -1,0 +1,541 @@
+<!--
+  File: /views/sistema/control.ejs
+  Descripción: Control de Turnos Rediseñado - Industrial Dark UI
+  Versión: 10.0
+-->
+
+<div class="container-fluid py-4 h-100 animate-in fade-in duration-500">
+
+  <!-- HEADER -->
+  <div class="row mb-5 align-items-end">
+    <div class="col">
+      <div class="text-uppercase tracking-widest text-secondary small fw-bold mb-1">Operaciones</div>
+      <h2 class="m-0 text-white fw-bold d-flex align-items-center gap-3">
+        <div class="icon-square-lg bg-azure-lt text-azure rounded-3 d-flex align-items-center justify-content-center"
+          style="width: 48px; height: 48px;">
+          <i class="ti ti-users fs-2"></i>
+        </div>
+        <span>Control de <span class="text-azure">Turnos</span></span>
+      </h2>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <div id="activeQueueBanner"
+        class="d-none d-flex align-items-center px-4 bg-azure-lt text-white rounded-pill border border-azure-30">
+        <div class="status-dot-blink bg-white me-2" style="width:8px; height:8px; border-radius:50%;"></div>
+        <span class="fw-bold small me-1">CANAL ACTIVO:</span>
+        <span id="activeQueueName" class="fw-black text-white">---</span>
+      </div>
+      <button class="btn btn-dark border-secondary text-white" onclick="startCasting()" title="Transmitir Monitor">
+        <i class="ti ti-cast me-2"></i> Cast
+      </button>
+      <button id="btnNewQueue" class="btn btn-primary d-flex align-items-center gap-2">
+        <i class="ti ti-plus"></i>
+        <span>Nueva Cola</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4 h-75">
+
+    <!-- LEFT: LISTA DE COLAS -->
+    <div class="col-xl-3 col-lg-4 d-flex flex-column gap-3">
+      <div class="tech-card fill-height d-flex flex-column">
+        <div
+          class="card-header border-bottom border-white-5 p-3 d-flex justify-content-between align-items-center bg-black-20">
+          <span class="text-uppercase small fw-bold text-secondary">Canales Disponibles</span>
+          <span class="badge bg-secondary-lt">Online</span>
+        </div>
+        <div class="card-body p-0 flex-grow-1 overflow-auto custom-scroll" id="queueList">
+          <!-- JS load -->
+          <div class="text-center py-5 text-muted opacity-50">Cargando canales...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: PANEL DE OPERACIONES -->
+    <div class="col-xl-9 col-lg-8">
+
+      <!-- EMPTY STATE -->
+      <div id="emptyPanel"
+        class="tech-card fill-height d-flex flex-column align-items-center justify-content-center text-center p-5">
+        <div class="icon-circle mb-4 bg-dark border border-secondary text-secondary"
+          style="width:100px; height:100px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:3rem;">
+          <i class="ti ti-hand-click"></i>
+        </div>
+        <h3 class="text-white fw-bold">Ninguna cola seleccionada</h3>
+        <p class="text-secondary mw-sm">Seleccione un canal de la lista izquierda para comenzar a operar los turnos.</p>
+      </div>
+
+      <!-- ACTIVE PANEL -->
+      <div id="turnPanel" class="d-none h-100 d-flex flex-column gap-4">
+
+        <!-- 1. DISPLAY PRINCIPAL (Glassmorphism) -->
+        <div
+          class="tech-card p-5 position-relative overflow-hidden d-flex flex-column align-items-center justify-content-center"
+          style="min-height: 250px; background: radial-gradient(circle at center, #1b2533 0%, #121417 100%);">
+          <!-- Background FX -->
+          <div class="bg-fx-grid"></div>
+
+          <div class="z-2 text-center">
+            <div class="text-uppercase tracking-widest text-secondary-50 fw-bold mb-2 small">Turno en Atención</div>
+            <div id="currentTurnNumber" class="display-1 fw-bold text-white tracking-tighter"
+              style="font-size: 8rem; line-height: 1; text-shadow: 0 0 40px rgba(32, 107, 196, 0.4);">--</div>
+            <div id="currentTurnStatus"
+              class="badge rounded-pill bg-white-10 border border-white-10 text-white mt-4 px-4 py-2">
+              ESPERANDO ACCIÓN
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. BOTONERA DE CONTROL -->
+        <div class="row g-3">
+          <div class="col-md-3">
+            <button id="btnNext" class="btn-ctrl btn-ctrl-primary h-100 w-100 p-4">
+              <i class="ti ti-player-skip-forward icon-lg mb-2"></i>
+              <div class="lbl">LLAMAR</div>
+              <div class="sub">Siguiente Turno</div>
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button id="btnComplete" class="btn-ctrl btn-ctrl-success h-100 w-100 p-4">
+              <i class="ti ti-check icon-lg mb-2"></i>
+              <div class="lbl">COMPLETAR</div>
+              <div class="sub">Finalizar Atención</div>
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button id="btnSkip" class="btn-ctrl btn-ctrl-warning h-100 w-100 p-4">
+              <i class="ti ti-clock-pause icon-lg mb-2"></i>
+              <div class="lbl">SALTAR</div>
+              <div class="sub">Turno Ausente</div>
+            </button>
+          </div>
+          <div class="col-md-3">
+            <button id="btnAddTurn" class="btn-ctrl btn-ctrl-azure h-100 w-100 p-4">
+              <i class="ti ti-ticket icon-lg mb-2"></i>
+              <div class="lbl">EMITIR</div>
+              <div class="sub">Imprimir Nuevo</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. HISTORIAL LOG -->
+        <div class="tech-card flex-grow-1 d-flex flex-column overflow-hidden mt-3">
+          <div class="card-header bg-transparent border-bottom border-white-5 px-4 py-3">
+            <i class="ti ti-history me-2 text-secondary"></i>
+            <span class="fw-bold text-secondary small text-uppercase">Historial de Eventos</span>
+          </div>
+          <div id="turnList" class="card-body p-0 overflow-auto custom-scroll">
+            <!-- JS Items -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIG -->
+<div class="modal fade" id="queueModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-content-glass">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-white">Configurar Cola</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-4">
+          <label class="form-label text-secondary small fw-bold text-uppercase">Nombre del Canal</label>
+          <input type="text" id="queueNameInput"
+            class="form-control form-control-lg bg-dark border-secondary text-white" placeholder="Ej: Carniceria">
+          <input type="hidden" id="queueIdInput">
+        </div>
+        <button id="saveQueueBtn" class="btn btn-primary w-100 py-2 fw-bold shadow-lg">
+          GUARDAR CAMBIOS
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* UTILS */
+  .fill-height {
+    height: 100%;
+    border-radius: 12px;
+  }
+
+  .bg-black-20 {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .bg-white-10 {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .border-white-5 {
+    border-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .text-azure {
+    color: #206bc4 !important;
+  }
+
+  .bg-azure-lt {
+    background: rgba(32, 107, 196, 0.1);
+  }
+
+  .border-azure-30 {
+    border-color: rgba(32, 107, 196, 0.3) !important;
+  }
+
+  .status-dot-blink {
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* CARDS */
+  .tech-card {
+    background: #121417;
+    border: 1px solid #2a2e33;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  /* QUEUE ITEMS */
+  .queue-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 4px solid transparent;
+  }
+
+  .queue-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .queue-item.active {
+    background: rgba(32, 107, 196, 0.05);
+    border-right-color: #206bc4;
+  }
+
+  .queue-actions {
+    opacity: 0;
+    transition: 0.2s;
+  }
+
+  .queue-item:hover .queue-actions {
+    opacity: 1;
+  }
+
+  /* ACTION BUTTONS */
+  .btn-ctrl {
+    background: #1a1d21;
+    border: 1px solid #2a2e33;
+    border-radius: 12px;
+    color: #fff;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-ctrl:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  }
+
+  .btn-ctrl:active {
+    transform: translateY(-2px);
+  }
+
+  .btn-ctrl .icon-lg {
+    font-size: 2rem;
+  }
+
+  .btn-ctrl .lbl {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+  }
+
+  .btn-ctrl .sub {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .btn-ctrl-primary:hover {
+    background: #206bc4;
+    border-color: #206bc4;
+  }
+
+  .btn-ctrl-success:hover {
+    background: #2fb344;
+    border-color: #2fb344;
+  }
+
+  .btn-ctrl-warning:hover {
+    background: #f59f0b;
+    border-color: #f59f0b;
+  }
+
+  .btn-ctrl-azure:hover {
+    background: #4299e1;
+    border-color: #4299e1;
+  }
+
+  /* SCROLLBAR */
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+  }
+
+  /* BG FX */
+  .bg-fx-grid {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 1;
+    opacity: 0.3;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const socket = io();
+    let currentQueue = null;
+    let currentTurn = null;
+
+    // Elements
+    const els = {
+      list: document.getElementById('queueList'),
+      panelEmpty: document.getElementById('emptyPanel'),
+      panelTurn: document.getElementById('turnPanel'),
+      banner: document.getElementById('activeQueueBanner'),
+      bannerName: document.getElementById('activeQueueName'),
+      turnNum: document.getElementById('currentTurnNumber'),
+      turnStatus: document.getElementById('currentTurnStatus'),
+      turnList: document.getElementById('turnList'),
+      modal: null // bootstrap modal instance
+    };
+
+    // --- API ---
+    const api = async (ep, opts = {}) => {
+      try { return await (await fetch(ep, { credentials: 'include', ...opts })).json(); } catch { return {}; }
+    };
+
+    // --- LOGIC ---
+    async function loadQueues() {
+      const data = await api("/api/queues");
+      els.list.innerHTML = "";
+
+      if (!data.length) {
+        els.list.innerHTML = `<div class="p-4 text-center text-secondary small">No hay canales creados.<br>Utiliza "Nueva Cola".</div>`;
+        return;
+      }
+
+      data.forEach(q => {
+        const row = document.createElement("div");
+        row.className = `queue-item d-flex justify-content-between align-items-center ${currentQueue?.id === q.id ? 'active' : ''}`;
+        row.innerHTML = `
+                <div>
+                   <div class="fw-bold text-white">${q.name}</div>
+                   <div class="small text-secondary" style="font-size:0.7rem">ID: ${q.id}</div>
+                </div>
+                <div class="queue-actions d-flex gap-2">
+                    <button class="btn btn-icon btn-ghost-secondary btn-sm edit-btn"><i class="ti ti-pencil"></i></button>
+                    <button class="btn btn-icon btn-ghost-danger btn-sm del-btn"><i class="ti ti-trash"></i></button>
+                </div>
+            `;
+
+        row.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          selectQueue(q);
+        };
+
+        row.querySelector('.edit-btn').onclick = () => openModal(q);
+        row.querySelector('.del-btn').onclick = async () => {
+          if (confirm(`¿Eliminar ${q.name}?`)) {
+            await fetch(`/api/queues/${q.id}`, { method: 'DELETE' });
+            loadQueues();
+          }
+        };
+
+        els.list.appendChild(row);
+      });
+    }
+
+    async function selectQueue(q) {
+      currentQueue = q;
+      els.panelEmpty.classList.add('d-none');
+      els.panelTurn.classList.remove('d-none');
+      els.banner.classList.remove('d-none');
+      els.bannerName.textContent = q.name.toUpperCase();
+
+      // Notify server of active queue
+      await fetch(`/api/set-active-queue/${q.id}`, { method: 'POST' });
+      loadQueues(); // to update active class visual
+      loadTurns();
+    }
+
+    async function loadTurns() {
+      if (!currentQueue) return;
+      const turns = await api(`/api/queues/${currentQueue.id}/turns`);
+
+      // Find Active
+      els.turnList.innerHTML = "";
+      currentTurn = turns.find(t => t.status === 'calling');
+
+      if (currentTurn) {
+        els.turnNum.textContent = currentTurn.turn_number;
+        els.turnStatus.textContent = "LLAMANDO / EN ATENCIÓN";
+        els.turnStatus.className = "badge rounded-pill bg-success-lt border border-success text-success mt-4 px-4 py-2";
+      } else {
+        const last = turns.filter(t => t.status !== 'waiting').pop(); // Show last processed or just '--'
+        if (turns.length > 0) {
+          // Might be waiting
+          const waiting = turns.filter(t => t.status === 'waiting');
+          if (waiting.length > 0) {
+            els.turnNum.textContent = waiting[0].turn_number;
+            els.turnStatus.textContent = "SIGUIENTE EN ESPERA";
+            els.turnStatus.className = "badge rounded-pill bg-warning-lt border border-warning text-warning mt-4 px-4 py-2";
+          } else {
+            els.turnNum.textContent = last ? last.turn_number : '--';
+            els.turnStatus.textContent = "SIN TURNOS PENDIENTES";
+            els.turnStatus.className = "badge rounded-pill bg-secondary-lt border border-secondary text-secondary mt-4 px-4 py-2";
+          }
+        } else {
+          els.turnNum.textContent = '--';
+          els.turnStatus.textContent = "COLA VACÍA";
+          els.turnStatus.className = "badge rounded-pill bg-secondary-lt border border-secondary text-secondary mt-4 px-4 py-2";
+        }
+      }
+
+      // History
+      turns.slice().reverse().slice(0, 20).forEach(t => {
+        const div = document.createElement('div');
+        let color = 'secondary';
+        if (t.status === 'completed') color = 'success';
+        if (t.status === 'calling') color = 'primary';
+        if (t.status === 'skipped') color = 'warning';
+
+        div.className = "d-flex justify-content-between px-4 py-2 border-bottom border-white-5 align-items-center";
+        div.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-black text-white" style="font-family:monospace; font-size:1.1rem;">#${t.turn_number}</span>
+                    <span class="badge bg-${color}-lt" style="font-size:0.65rem;">${t.status.toUpperCase()}</span>
+                </div>
+                <div class="text-secondary small" style="font-size:0.7rem;">${new Date(t.created_at).toLocaleTimeString()}</div>
+            `;
+        els.turnList.appendChild(div);
+      });
+    }
+
+    // --- ACTIONS ---
+    document.getElementById('btnNext').onclick = async () => {
+      if (!currentQueue) return;
+      await fetch(`/api/queues/${currentQueue.id}/call-next`, { method: 'POST' });
+      loadTurns();
+    };
+    document.getElementById('btnComplete').onclick = async () => {
+      if (!currentTurn) return;
+      await fetch(`/api/turns/${currentTurn.id}/complete`, { method: 'PUT' });
+      loadTurns();
+    };
+    document.getElementById('btnSkip').onclick = async () => {
+      if (!currentTurn) return;
+      await fetch(`/api/turns/${currentTurn.id}/skip`, { method: 'PUT' });
+      loadTurns();
+    };
+    document.getElementById('btnAddTurn').onclick = async () => {
+      if (!currentQueue) return;
+      await fetch(`/api/queues/${currentQueue.id}/turns`, { method: 'POST' });
+      loadTurns();
+    };
+
+    // --- MODAL ---
+    const qName = document.getElementById('queueNameInput');
+    const qId = document.getElementById('queueIdInput');
+    const qBtn = document.getElementById('saveQueueBtn');
+
+    window.openModal = (q = null) => {
+      if (q) {
+        qName.value = q.name;
+        qId.value = q.id;
+      } else {
+        qName.value = '';
+        qId.value = '';
+      }
+      if (!els.modal) els.modal = new bootstrap.Modal(document.getElementById('queueModal'));
+      els.modal.show();
+    };
+    document.getElementById('btnNewQueue').onclick = () => openModal();
+
+    qBtn.onclick = async () => {
+      const payload = { name: qName.value };
+      const id = qId.value;
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/queues/${id}` : '/api/queues';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        els.modal.hide();
+        loadQueues();
+      } else {
+        alert('Error al guardar');
+      }
+    };
+
+    // --- CASTING --
+    window.startCasting = async () => {
+      if (window.PresentationRequest) {
+        const request = new PresentationRequest(['/monitor']);
+        try {
+          await request.start();
+        } catch (error) { console.log('Cast cancelled'); }
+      } else {
+        alert("Tu navegador no soporta Tab Casting nativo (Presentation API). Usa Chrome.");
+      }
+    };
+
+    // --- LIVE ---
+    socket.on('turn-update', (data) => {
+      if (currentQueue && data.queue_id == currentQueue.id) loadTurns();
+    });
+
+    // Init
+    loadQueues();
+  });
+</script>

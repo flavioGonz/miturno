@@ -1,0 +1,379 @@
+<!--
+  File: /views/sistema/pantallas.ejs
+  Descripción: Configuración de Pantallas - Industrial Studio Edition
+  Versión: 7.0 - Gestión de Hardware y Asignación Dinámica de Colas
+-->
+
+<div class="studio-wrapper animate-in fade-in duration-500">
+  <div class="container-fluid py-4 h-100">
+    <!-- 🧭 HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+      <div>
+        <div class="text-secondary small fw-bold text-uppercase tracking-widest mb-1">Entorno de Visualización</div>
+        <h2 class="text-white fw-bold m-0 d-flex align-items-center gap-3">
+          <i class="ti ti-device-desktop-analytics text-azure fs-1"></i>
+          Control de <span class="text-azure">Pantallas</span>
+        </h2>
+      </div>
+      <button id="btnNewMonitor" class="btn-tech-outline text-azure">
+        <i class="ti ti-plus"></i> <span>Añadir Monitor</span>
+      </button>
+    </div>
+
+    <div id="msgBox" class="alert-tech d-none"></div>
+
+    <div class="row g-4">
+      <!-- 🖥️ LISTADO DE MONITORES -->
+      <div class="col-lg-4">
+        <div class="tech-card h-100">
+          <div class="p-4">
+            <h4 class="text-white fw-bold mb-4 d-flex align-items-center gap-2">
+              <i class="ti ti-binary text-secondary"></i> Dispositivos Registrados
+            </h4>
+            <div id="monitorList" class="monitor-grid-list">
+              <!-- JS population -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⚙️ CONFIGURACIÓN DETALLADA -->
+      <div class="col-lg-8">
+        <div id="configCard" class="tech-card mb-4 d-none p-0 overflow-hidden">
+          <div class="card-edge-azure"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="text-white fw-bold m-0">
+                <i class="ti ti-settings text-azure"></i> Parámetros: <span id="monitorName" class="text-azure"></span>
+              </h4>
+              <span class="text-secondary extra-small fw-bold uppercase px-2 py-1 bg-white-5">Hardware ID: <span
+                  id="monitorIdLabel"></span></span>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="tech-label">Cola de Atención</label>
+                <select id="queueSelect" class="tech-input"></select>
+                <div class="extra-small text-secondary mt-2">Determina qué flujo de turnos mostrará esta pantalla.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="tech-label">Orientación Física</label>
+                <select id="orientation" class="tech-input">
+                  <option value="horizontal">Horizontal (Estándar)</option>
+                  <option value="vertical">Vertical (Totem)</option>
+                </select>
+              </div>
+              <div class="col-12 mt-2">
+                <label class="tech-label">Referencia de Fondo (Imagen/Color)</label>
+                <input type="text" id="background" class="tech-input" placeholder="/media/bg.jpg">
+              </div>
+            </div>
+
+            <div class="d-flex gap-4 mt-4 py-3 border-top border-white-5">
+              <div class="form-check form-switch tech-switch">
+                <input class="form-check-input" type="checkbox" id="showWeather">
+                <label class="form-check-label text-white small">Activar Clima</label>
+              </div>
+              <div class="form-check form-switch tech-switch">
+                <input class="form-check-input" type="checkbox" id="showNews">
+                <label class="form-check-label text-white small">Activar Noticias</label>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <div class="d-flex gap-2">
+                <button id="btnSaveMonitor" class="btn-tech-primary px-4 py-2">
+                  <i class="ti ti-device-floppy"></i> Guardar Cambios
+                </button>
+                <button id="btnOpenMonitor" class="btn-tech-outline py-2">
+                  <i class="ti ti-external-link"></i> Ver Pantalla
+                </button>
+              </div>
+              <button id="btnDeleteMonitor" class="btn-tech-danger-outline py-2">
+                <i class="ti ti-trash"></i> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 👁️ PREVIEW FRAME (Mini Monitor) -->
+        <div class="tech-card h-100 bg-black overflow-hidden" style="min-height: 500px;">
+          <div class="p-2 h-100 position-relative">
+            <iframe id="previewFrame" src="/monitor" class="preview-iframe"></iframe>
+            <div class="preview-overlay-info">PREVISUALIZACIÓN DE HARDWARE</div>
+            <button id="refreshPreview" class="btn-refresh-float"><i class="ti ti-refresh"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .studio-wrapper {
+    background: #060708;
+    min-height: 100vh;
+    color: #fff;
+  }
+
+  .tech-card {
+    background: #0d0f11;
+    border: 1px solid #1a1e22;
+    position: relative;
+  }
+
+  .card-edge-azure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #206bc4;
+  }
+
+  .tech-label {
+    display: block;
+    color: #5c6773;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .tech-input {
+    width: 100%;
+    background: #060708;
+    border: 1px solid #1a1e22;
+    color: #fff;
+    padding: 12px 15px;
+    font-family: inherit;
+  }
+
+  .tech-input:focus {
+    outline: none;
+    border-color: #206bc4;
+  }
+
+  .btn-tech-primary {
+    background: #206bc4;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.2s;
+  }
+
+  .btn-tech-primary:hover {
+    background: #1a569d;
+  }
+
+  .btn-tech-outline {
+    background: transparent;
+    border: 1px solid #1a1e22;
+    color: #fff;
+    padding: 10px 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-tech-danger-outline {
+    background: transparent;
+    border: 1px solid #d63939;
+    color: #d63939;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .btn-tech-danger-outline:hover {
+    background: #d63939;
+    color: #fff;
+  }
+
+  .monitor-grid-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .monitor-item {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid transparent;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.2s;
+    cursor: pointer;
+  }
+
+  .monitor-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .monitor-item.active {
+    border-left-color: #206bc4;
+    background: rgba(32, 107, 196, 0.1);
+  }
+
+  .preview-iframe {
+    width: 100%;
+    height: 500px;
+    border: none;
+  }
+
+  .preview-overlay-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 0.6rem;
+    font-weight: 900;
+    background: #206bc4;
+    padding: 3px 10px;
+    letter-spacing: 2px;
+  }
+
+  .btn-refresh-float {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #1a1e22;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const monitorList = document.getElementById('monitorList');
+    const msgBox = document.getElementById('msgBox');
+    const configCard = document.getElementById('configCard');
+    const previewFrame = document.getElementById('previewFrame');
+    const refreshPreview = document.getElementById('refreshPreview');
+    const monitorName = document.getElementById('monitorName');
+    const monitorIdLabel = document.getElementById('monitorIdLabel');
+    const queueSelect = document.getElementById('queueSelect');
+    const orientation = document.getElementById('orientation');
+    const background = document.getElementById('background');
+    const showWeather = document.getElementById('showWeather');
+    const showNews = document.getElementById('showNews');
+
+    let currentMonitor = null;
+
+    const showMsg = (msg, type = 'success') => {
+      msgBox.textContent = msg;
+      msgBox.className = `alert-tech show`; // Simplified for existing global CSS
+      msgBox.classList.remove('d-none');
+      setTimeout(() => msgBox.classList.add('d-none'), 3000);
+    };
+
+    const getJSON = async (url) => {
+      const res = await fetch(url, { credentials: 'include' });
+      return await res.json();
+    };
+
+    const loadQueues = async () => {
+      const queues = await getJSON('/api/queues');
+      queueSelect.innerHTML = '<option value="">(SIN ASIGNAR)</option>';
+      queues.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = q.name.toUpperCase();
+        queueSelect.appendChild(opt);
+      });
+    };
+
+    const loadMonitors = async () => {
+      const data = await getJSON('/api/monitors');
+      monitorList.innerHTML = '';
+      data.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `monitor-item ${currentMonitor?.id === m.id ? 'active' : ''}`;
+        div.innerHTML = `
+                <div>
+                    <div class="fw-bold text-white small">${m.name.toUpperCase()}</div>
+                    <div class="extra-small text-secondary">${m.queue_name || 'Desconectado'}</div>
+                </div>
+                <i class="ti ti-chevron-right text-secondary"></i>
+            `;
+        div.onclick = () => openMonitor(m.id);
+        monitorList.appendChild(div);
+      });
+    };
+
+    const openMonitor = async (id) => {
+      const m = await getJSON('/api/monitors/' + id);
+      currentMonitor = m;
+      monitorName.textContent = m.name;
+      monitorIdLabel.textContent = m.id;
+      configCard.classList.remove('d-none');
+      queueSelect.value = m.queue_id || '';
+      orientation.value = m.orientation || 'horizontal';
+      background.value = m.background || '';
+      showWeather.checked = !!m.show_weather;
+      showNews.checked = !!m.show_news;
+
+      previewFrame.src = `/monitor?id=${m.id}`;
+      loadMonitors(); // Refresh list selection
+    };
+
+    document.getElementById('btnSaveMonitor').onclick = async () => {
+      if (!currentMonitor) return;
+      const payload = {
+        name: currentMonitor.name,
+        queue_id: queueSelect.value || null,
+        orientation: orientation.value,
+        background: background.value.trim(),
+        show_weather: showWeather.checked,
+        show_news: showNews.checked
+      };
+      const res = await fetch('/api/monitors/' + currentMonitor.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        showMsg('Cambios aplicados correctamente');
+        loadMonitors();
+      }
+    };
+
+    document.getElementById('btnOpenMonitor').onclick = () => {
+      if (currentMonitor) window.open(`/monitor?id=${currentMonitor.id}`, '_blank');
+    };
+
+    document.getElementById('btnDeleteMonitor').onclick = async () => {
+      if (!currentMonitor || !confirm('¿Eliminar este monitor permanentemente?')) return;
+      await fetch('/api/monitors/' + currentMonitor.id, { method: 'DELETE' });
+      configCard.classList.add('d-none');
+      loadMonitors();
+    };
+
+    document.getElementById('btnNewMonitor').onclick = async () => {
+      const name = prompt('Nombre identificador:');
+      if (!name) return;
+      await fetch('/api/monitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      loadMonitors();
+    };
+
+    refreshPreview.onclick = () => {
+      if (currentMonitor) previewFrame.src = `/monitor?id=${currentMonitor.id}&c=${Date.now()}`;
+    };
+
+    loadQueues();
+    loadMonitors();
+  });
+</script>

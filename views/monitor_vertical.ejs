@@ -1,0 +1,314 @@
+<!--
+  File: /home/fgonzalez/turnito/views/monitor_vertical.ejs
+  Descripción: Pantalla pública vertical (Turnos + Dólar + Clima + Publicidad + Noticias)
+  Versión: 6.0 - Optimizada para monitores 1080x1920 (portrait)
+  Autor: Flavio González - Infratec Networks (Uruguay, 2025)
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pantalla Vertical - Turnito</title>
+  <link rel="stylesheet" href="/css/tabler-dark.min.css">
+  <link rel="stylesheet" href="/icons/tabler-icons.min.css">
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    .wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      color: #000;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* CABECERA: HORA + CLIMA + DÓLAR */
+    .top-info {
+      width: 100%;
+      background: #f2f2f2;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-bottom: 3px solid #00bfff33;
+    }
+    .top-info div {
+      font-size: 1.5rem;
+      color: #333;
+      margin: 4px 0;
+    }
+    .top-info i {
+      color: #00bfff;
+      margin-right: 6px;
+    }
+
+    /* SECCIÓN TURNOS */
+    .turn-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .turn-label {
+      font-size: 2rem;
+      color: #00bfff;
+      margin-bottom: 15px;
+    }
+    .turn-number {
+      font-size: 12rem;
+      font-weight: 800;
+      color: #000;
+      text-shadow: 0 0 30px #00bfff44;
+    }
+    .queue-name {
+      font-size: 2.5rem;
+      margin-top: 10px;
+      color: #333;
+    }
+
+    /* EN ESPERA */
+    .waiting-turns {
+      margin-top: 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .waiting-turn {
+      background: #eee;
+      color: #000;
+      border-radius: 12px;
+      padding: 10px 25px;
+      font-weight: 600;
+      font-size: 2rem;
+      box-shadow: 0 0 6px #0003 inset;
+    }
+
+    /* PUBLICIDAD */
+    .ad-panel {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      overflow: hidden;
+      background: #000;
+    }
+    .ad-panel img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .ad-panel img.active { opacity: 1; }
+
+    /* NOTICIAS */
+    #newsTicker {
+      width: 100%;
+      height: 90px;
+      background: linear-gradient(90deg, #001020, #002540);
+      border-top: 2px solid #00bfff55;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .news-item {
+      color: #fff;
+      font-size: 1.5rem;
+      max-width: 90%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      text-align: center;
+    }
+    .news-item.active { opacity: 1; }
+    .news-item i { color: #00bfff; margin-right: 8px; }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="top-info">
+      <div><i class="ti ti-clock"></i> <span id="clock">--:--:--</span></div>
+      <div><i class="ti ti-cloud"></i> <span id="weather">Cargando clima...</span></div>
+      <div><i class="ti ti-currency-dollar"></i> <span id="usdRate">Cargando dólar...</span></div>
+    </div>
+
+    <div class="turn-section">
+      <div class="turn-label"><i class="ti ti-bell"></i> Turno actual</div>
+      <div id="turnNumber" class="turn-number">--</div>
+      <div id="queueName" class="queue-name">Cargando...</div>
+      <div id="waitingTurns" class="waiting-turns">—</div>
+      <audio id="turnSound" src="/media/chime.mp3" preload="auto"></audio>
+    </div>
+
+    <div class="ad-panel">
+      <img src="/media/publi1.jpg" class="active" alt="Publicidad 1">
+      <img src="/media/publi2.jpg" alt="Publicidad 2">
+      <img src="/media/publi3.jpg" alt="Publicidad 3">
+    </div>
+
+    <div id="newsTicker">
+      <div id="newsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const clockEl = document.getElementById('clock');
+    const weatherEl = document.getElementById('weather');
+    const usdRateEl = document.getElementById('usdRate');
+    const turnNum = document.getElementById('turnNumber');
+    const queueName = document.getElementById('queueName');
+    const waitingTurnsEl = document.getElementById('waitingTurns');
+    const sound = document.getElementById('turnSound');
+    const ads = document.querySelectorAll('.ad-panel img');
+    const newsContainer = document.getElementById('newsContainer');
+
+    let lastShown = { queue: null, turn: null };
+    let queues = [];
+    let adIndex = 0;
+    let newsIndex = 0;
+    let newsItems = [];
+
+    /* Reloj */
+    setInterval(() => {
+      const d = new Date();
+      clockEl.textContent = d.toLocaleTimeString('es-UY', { hour12: false });
+    }, 1000);
+
+    /* Clima */
+    async function loadWeather() {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-34.9&longitude=-56.2&current_weather=true');
+        const data = await res.json();
+        const w = data.current_weather;
+        if (w) weatherEl.textContent = `${w.temperature}°C - ${w.weathercode < 3 ? 'Despejado' : 'Nublado'}`;
+      } catch { weatherEl.textContent = 'Sin conexión'; }
+    }
+
+    /* Dólar - BROU fallback local */
+    async function loadUSD() {
+      try {
+        const res = await fetch('/api/dolar');
+        const data = await res.json();
+        usdRateEl.textContent = data?.message || `Compra: ${data.compra} | Venta: ${data.venta}`;
+      } catch {
+        usdRateEl.textContent = 'No disponible';
+      }
+    }
+
+    /* Noticias */
+    async function loadNews() {
+      try {
+        const res = await fetch('/api/news');
+        const text = await res.text();
+        let tempItems = [];
+        try {
+          const json = JSON.parse(text);
+          if (json?.results?.length) tempItems = json.results.map(n => n.title);
+        } catch {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(text, "text/xml");
+          tempItems = Array.from(xml.querySelectorAll("item")).map(it => it.querySelector("title")?.textContent);
+        }
+        newsItems = tempItems.length ? tempItems.slice(0, 10) : ['No hay noticias recientes en Uruguay.'];
+        showNews();
+      } catch { newsItems = ['Sin conexión o fuente no disponible.']; showNews(); }
+    }
+
+    function showNews() {
+      newsContainer.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'news-item active';
+      div.innerHTML = `<i class="ti ti-point"></i> ${newsItems[newsIndex]}`;
+      newsContainer.appendChild(div);
+      newsIndex = (newsIndex + 1) % newsItems.length;
+    }
+
+    setInterval(() => {
+      const old = newsContainer.querySelector('.news-item');
+      if (old) old.classList.remove('active');
+      setTimeout(showNews, 800);
+    }, 10000);
+
+    /* Publicidad */
+    function rotateAds() {
+      ads[adIndex].classList.remove('active');
+      adIndex = (adIndex + 1) % ads.length;
+      ads[adIndex].classList.add('active');
+    }
+    setInterval(rotateAds, 10000);
+
+    async function getJSON(url) {
+      try {
+        const res = await fetch(url);
+        return await res.json();
+      } catch { return {}; }
+    }
+
+    /* Turnos */
+    async function fetchTurn() {
+      try {
+        if (!queues.length) queues = await getJSON('/public/queues');
+        if (!queues.length) {
+          queueName.textContent = 'Sin colas registradas';
+          return;
+        }
+        const activeQueue = queues[0];
+        const turns = await getJSON(`/public/queues/${activeQueue.id}/turns`);
+        const current = turns.find(t => t.status === 'calling');
+        const waiting = turns.filter(t => t.status === 'waiting').slice(0, 4);
+
+        if (current && (current.turn_number !== lastShown.turn || activeQueue.name !== lastShown.queue)) {
+          lastShown = { queue: activeQueue.name, turn: current.turn_number };
+          turnNum.textContent = current.turn_number;
+          queueName.textContent = activeQueue.name;
+          sound.currentTime = 0; sound.play().catch(()=>{});
+        }
+
+        waitingTurnsEl.innerHTML = waiting.length
+          ? waiting.map(t => `<div class="waiting-turn">${t.turn_number}</div>`).join('')
+          : '—';
+      } catch (err) {
+        console.error('Error turnos:', err);
+        queueName.textContent = 'Error cargando datos';
+      }
+    }
+
+    /* Inicialización */
+    loadWeather();
+    loadUSD();
+    loadNews();
+    fetchTurn();
+
+    setInterval(fetchTurn, 5000);
+    setInterval(loadWeather, 300000);
+    setInterval(loadUSD, 300000);
+    setInterval(loadNews, 600000);
+
+    /* Socket.IO */
+    const socket = io();
+    socket.on('turn-update', fetchTurn);
+  });
+  </script>
+</body>
+</html>

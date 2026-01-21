@@ -1,0 +1,515 @@
+<% /* Turnito Monitor View - Robust Logic */ var qName="" ; if (typeof config !=='undefined' && config &&
+  config.queue_name) { qName=config.queue_name.toLowerCase(); } var theme="general" ; var icon="ti-apps" ; if
+  (qName.indexOf("panaderia") !==-1 || qName.indexOf("panadero") !==-1) { theme="panaderia" ; icon="ti-bread" ; } else
+  if (qName.indexOf("carniceria") !==-1 || qName.indexOf("carne") !==-1) { theme="carniceria" ; icon="ti-meat" ; } else
+  if (qName.indexOf("roticeria") !==-1 || qName.indexOf("comida") !==-1) { theme="roticeria" ; icon="ti-tools-kitchen-2"
+  ; } else if (qName.indexOf("fiambreria") !==-1 || qName.indexOf("queso") !==-1) { theme="fiambreria" ;
+  icon="ti-cheese" ; } %>
+  <!DOCTYPE html>
+  <html lang="es" data-theme="<%= theme %>">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnito Pro - <%= (typeof config !=='undefined' && config.queue_name) ? config.queue_name : 'Monitor' %>
+    </title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Bebas+Neue&family=Outfit:wght@300;600;800&display=swap"
+      rel="stylesheet">
+    <link rel="stylesheet" href="/icons/tabler-icons.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+      :root {
+        --bg-deep: #050505;
+        --bg-panel: rgba(15, 18, 22, 0.85);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --accent: #00d2ff;
+        --accent-glow: rgba(0, 210, 255, 0.3);
+        --text-main: #ffffff;
+        --text-dim: #94a3b8;
+      }
+
+      [data-theme="panaderia"] {
+        --accent: #f59e0b;
+        --accent-glow: rgba(245, 158, 11, 0.3);
+      }
+
+      [data-theme="carniceria"] {
+        --accent: #ef4444;
+        --accent-glow: rgba(239, 68, 68, 0.3);
+      }
+
+      [data-theme="roticeria"] {
+        --accent: #f97316;
+        --accent-glow: rgba(249, 115, 22, 0.3);
+      }
+
+      [data-theme="fiambreria"] {
+        --accent: #10b981;
+        --accent-glow: rgba(16, 185, 129, 0.3);
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        background-color: var(--bg-deep);
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        margin: 0;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+      }
+
+      .viewport {
+        display: grid;
+        grid-template-columns: 1fr 480px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .main-section {
+        position: relative;
+        background: var(--bg-deep);
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--border-color);
+      }
+
+      .section-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.15;
+        background-size: cover;
+        background-position: center;
+        z-index: 0;
+        filter: saturate(0.5) blur(2px);
+      }
+
+      [data-theme="panaderia"] .section-bg {
+        background-image: url('/media/bg_panaderia.png');
+      }
+
+      [data-theme="carniceria"] .section-bg {
+        background-image: url('/media/bg_carniceria.png');
+      }
+
+      [data-theme="roticeria"] .section-bg {
+        background-image: url('/media/bg_roticeria.png');
+      }
+
+      [data-theme="fiambreria"] .section-bg {
+        background-image: url('/media/bg_fiambreria.png');
+      }
+
+      .content-overlay {
+        position: relative;
+        z-index: 2;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        padding: 50px 0;
+        text-align: center;
+      }
+
+      .brand-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 15px;
+        padding: 10px 0;
+        /* background-box removed for cleaner look */
+      }
+
+      .brand-icon {
+        font-size: 1.5rem;
+        color: var(--accent);
+        filter: drop-shadow(0 0 8px var(--accent-glow));
+      }
+
+      .brand-name {
+        font-weight: 800;
+        font-size: 1.4rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+      }
+
+      .turn-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .number-display {
+        font-family: 'Bebas Neue', cursive;
+        font-size: 28vw;
+        line-height: 0.85;
+        margin: 0;
+        color: #fff;
+        text-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .number-display.calling {
+        color: var(--accent);
+        transform: scale(1.1);
+        text-shadow: 0 0 50px var(--accent-glow);
+      }
+
+      .waiting-label {
+        font-size: 1.2rem;
+        font-weight: 400;
+        color: var(--text-dim);
+        letter-spacing: 12px;
+        text-transform: uppercase;
+        margin-top: -10px;
+      }
+
+      .footer-stream {
+        background: rgba(255, 255, 255, 0.02);
+        border-top: 1px solid var(--border-color);
+        padding: 30px 50px;
+        display: flex;
+        align-items: center;
+        gap: 40px;
+      }
+
+      .stream-title {
+        font-weight: 900;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .waiting-pills {
+        display: flex;
+        gap: 20px;
+        flex: 1;
+      }
+
+      .pill {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-color);
+        padding: 12px 30px;
+        border-radius: 4px;
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: #eee;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        position: relative;
+      }
+
+      .pill::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 10%;
+        right: 10%;
+        height: 2px;
+        background: var(--accent);
+        opacity: 0.5;
+      }
+
+      .clock-box {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 1.5rem;
+        color: var(--text-dim);
+      }
+
+      .side-panel {
+        background: #000;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .news-card {
+        padding: 25px;
+        background: #0a0a0a;
+        border-bottom: 2px solid var(--accent);
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .weather-line {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 800;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+
+      .news-text {
+        font-size: 1.1rem;
+        line-height: 1.4;
+        color: #fff;
+        font-weight: 400;
+        transition: opacity 0.5s;
+      }
+
+      .ad-container {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ad-img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 1.2s ease-in-out;
+      }
+
+      .ad-img.active {
+        opacity: 1;
+      }
+
+      .bell-toast {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.5);
+        font-size: 15rem;
+        color: var(--accent);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 10;
+      }
+
+      .calling .bell-toast {
+        opacity: 0.15;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="viewport" id="mainContainer">
+      <section class="main-section">
+        <div class="section-bg"></div>
+        <div class="content-overlay">
+          <header class="header">
+            <div class="brand-box">
+              <i class="ti <%= icon %> brand-icon"></i>
+              <span class="brand-name">
+                <%= (typeof config !=='undefined' && config.queue_name) ? config.queue_name : 'Monitor' %>
+              </span>
+              <i class="ti <%= icon %> brand-icon"></i>
+            </div>
+          </header>
+          <div class="turn-center">
+            <h1 id="turnNumber" class="number-display">--</h1>
+            <div id="waitingMsg" class="waiting-label">ESPERANDO TURNO</div>
+            <i class="ti ti-bell-filled bell-toast"></i>
+          </div>
+          <footer class="footer-stream">
+            <div class="stream-title">En Lista <i class="ti ti-chevron-right"></i></div>
+            <div id="waitingPills" class="waiting-pills"></div>
+            <div class="clock-box" id="clock">00:00:00</div>
+          </footer>
+        </div>
+      </section>
+      <aside class="side-panel">
+        <% if ((typeof config !=='undefined' ) && (config.show_weather || config.show_news)) { %>
+          <div class="news-card">
+            <% if (config.show_weather) { %>
+              <div class="weather-line">
+                <span id="weather">CARGANDO...</span>
+                <span>MONTEVIDEO</span>
+              </div>
+              <% } %>
+                <% if (config.show_news) { %>
+                  <div id="newsTicker" class="news-text">Sincronizando información...</div>
+                  <% } %>
+          </div>
+          <% } %>
+            <div class="ad-container" id="adContainer"></div>
+      </aside>
+    </div>
+
+    <audio id="bell" src="/media/chime.mp3" preload="auto"></audio>
+
+    <!-- 
+    Safe JSON Data Transfer Strategy 
+    Uses a script tag with type="application/json" to avoid JS syntax errors due to EJS rendering.
+  -->
+    <script id="server-config"
+      type="application/json"><%- (typeof config !== 'undefined') ? JSON.stringify(config) : '{}' %></script>
+
+    <script>
+      var monitorConfig = {};
+      try {
+        var rawConfig = document.getElementById('server-config').textContent;
+        monitorConfig = JSON.parse(rawConfig);
+      } catch (e) {
+        console.error("Error parsing monitor config from server:", e);
+      }
+
+      var socket = io();
+      var lastCall = null;
+
+      // Clock
+      function updateClock() {
+        var now = new Date();
+        document.getElementById('clock').textContent = now.getHours().toString().padStart(2, '0') + ':' +
+          now.getMinutes().toString().padStart(2, '0') + ':' +
+          now.getSeconds().toString().padStart(2, '0');
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // Ads
+      var ads = [];
+      var adIdx = 0;
+      function initAds() {
+        fetch('/api/ads')
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.files && data.files.length > 0) {
+              ads = data.files;
+              var container = document.getElementById('adContainer');
+              var html = '';
+              for (var i = 0; i < ads.length; i++) {
+                var active = (i === 0) ? 'active' : '';
+                html += '<img src="/media/' + ads[i] + '" class="ad-img ' + active + '" style="width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0;">';
+              }
+              container.innerHTML = html;
+
+              if (ads.length > 1) {
+                setInterval(rotateAds, (data.interval || 8) * 1000);
+              }
+            }
+          })
+          .catch(function (e) { console.error("Ad Error", e); });
+      }
+
+      function rotateAds() {
+        var slides = document.querySelectorAll('.ad-img');
+        if (slides.length < 2) return;
+        slides[adIdx].classList.remove('active');
+        adIdx = (adIdx + 1) % slides.length;
+        slides[adIdx].classList.add('active');
+      }
+
+      // Refresh Logic
+      function refresh() {
+        if (!monitorConfig.queue_id) return;
+        fetch('/public/queues/' + monitorConfig.queue_id + '/turns')
+          .then(function (res) { return res.json(); })
+          .then(function (turns) {
+            var current = null;
+            for (var i = 0; i < turns.length; i++) {
+              if (turns[i].status === 'calling') {
+                current = turns[i];
+                break;
+              }
+            }
+
+            var sorted = turns.sort(function (a, b) { return b.id - a.id; });
+            var last = current || sorted[0];
+
+            var waiting = turns.filter(function (t) { return t.status === 'waiting'; }).slice(0, 4);
+            var numEl = document.getElementById('turnNumber');
+            var container = document.getElementById('mainContainer');
+            var msgEl = document.getElementById('waitingMsg');
+
+            if (current) {
+              numEl.textContent = current.turn_number.toString().padStart(2, '0');
+              msgEl.textContent = "ES TÚ TURNO";
+              msgEl.style.color = "var(--accent)";
+
+              if (current.turn_number !== lastCall) {
+                lastCall = current.turn_number;
+                container.classList.add('calling');
+                numEl.classList.add('calling');
+                document.getElementById('bell').play().catch(function () { });
+                setTimeout(function () {
+                  container.classList.remove('calling');
+                  numEl.classList.remove('calling');
+                }, 6000);
+              }
+            } else if (last) {
+              numEl.textContent = last.turn_number.toString().padStart(2, '0');
+              msgEl.textContent = "ÚLTIMO LLAMADO";
+              msgEl.style.color = "var(--text-dim)";
+              lastCall = last.turn_number;
+            } else {
+              numEl.textContent = "00";
+              msgEl.textContent = "ESPERANDO TURNO";
+              lastCall = null;
+            }
+
+            var pillsHtml = '';
+            for (var j = 0; j < waiting.length; j++) {
+              pillsHtml += '<div class="pill">' + waiting[j].turn_number + '</div>';
+            }
+            document.getElementById('waitingPills').innerHTML = pillsHtml;
+          })
+          .catch(function (e) { console.error(e); });
+      }
+
+      // Extras
+      function loadExtras() {
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=-34.9&longitude=-56.2&current_weather=true')
+          .then(function (res) { return res.json(); })
+          .then(function (jd) {
+            document.getElementById('weather').textContent = Math.round(jd.current_weather.temperature) + '°C CIELO DESPEJADO';
+          })
+          .catch(function () { });
+
+        fetch('/api/news')
+          .then(function (res) { return res.json(); })
+          .then(function (jd) {
+            var items = jd.results || [];
+            if (items.length) {
+              var ni = 0;
+              var ticker = document.getElementById('newsTicker');
+              ticker.textContent = items[0].title;
+              setInterval(function () {
+                ticker.style.opacity = 0;
+                setTimeout(function () {
+                  ticker.textContent = items[ni].title;
+                  ticker.style.opacity = 1;
+                  ni = (ni + 1) % items.length;
+                }, 500);
+              }, 10000);
+            }
+          })
+          .catch(function () { });
+      }
+
+      // Events
+      socket.on('turn-update', function (data) {
+        if (monitorConfig.queue_id && data.queue_id == monitorConfig.queue_id) {
+          refresh();
+        }
+      });
+
+      // Init
+      document.addEventListener('DOMContentLoaded', function () {
+        refresh();
+        initAds();
+        loadExtras();
+        setInterval(refresh, 5000);
+      });
+    </script>
+  </body>
+
+  </html>
